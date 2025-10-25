@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Seach Results{% endblock %}
+
+{% block content %}
+
+<!-- Page Heading -->
+<div class="page-heading">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="top-text header-text">
+          <h2>Results</h2>
+          <h6>Your search brought up the following results:</h6>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Listing Section -->
+<div class="listing-page">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="naccs">
+          <div class="grid">
+            <div class="row">
+              <!-- Sidebar Categories -->
+              <div class="col-lg-3">
+                <div class="menu">
+                  <!-- Optional sidebar content -->
+                </div>
+              </div>
+
+              <!-- Listings Section -->
+              <div class="col-lg-9">
+                <ul class="nacc">
+                  <li class="active">
+                    <div>
+                      <div class="col-lg-12">
+                        <div class="row">
+                          {% if companies %}
+                            {% for company in companies %}
+                            <div class="col-lg-12 mb-4">
+                              <div class="listing-item" style="display: inline-flex; background-color: #f7f7f7; border-radius: 7px; width: 100%; position: relative; margin-bottom: 30px; padding: 30px;">
+                                <div class="left-image"></div>
+                                <div class="right-content align-self-center">
+                                  <h4>{{ company.name }}</h4>
+                                  <h6>FNR: {{ company.fnr }}</h6>
+                                  <div class="main-white-button mt-3">
+                                    <a href="#"><i class="fa fa-eye"></i> View Details</a>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {% endfor %}
+                          {% else %}
+                            <div class="col-lg-12 text-center mt-5">
+                              <h5>No results found.</h5>
+                              <p>Please try a different search or check your spelling.</p>
+                            </div>
+                          {% endif %}
+
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+
+                <!-- ✅ Pagination Controls (moved outside <ul>) -->
+                <div class="pagination-controls text-center mt-4">
+                  <p>Page {{ page }} of {{ total_pages }}</p>
+                  <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                      {% if page > 1 %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.search_results', page=page-1) }}">Previous</a>
+                      </li>
+                      {% endif %}
+                      {% if page < total_pages %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.search_results', page=page+1) }}">Next</a>
+                      </li>
+                      {% endif %}
+                    </ul>
+                  </nav>
+                </div>
+
+              </div> <!-- .col-lg-9 -->
+            </div> <!-- .row -->
+          </div> <!-- .grid -->
+        </div> <!-- .naccs -->
+      </div> <!-- .col-lg-12 -->
+    </div> <!-- .row -->
+  </div> <!-- .container -->
+</div> <!-- .listing-page -->
+
+{% endblock %}
