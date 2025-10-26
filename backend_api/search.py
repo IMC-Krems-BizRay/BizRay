@@ -51,7 +51,7 @@ def search_by_fnr(company_fnr):
 
     firma = suche_response.FIRMA
 
-    legal_form_entry = firma.FI_DKZ07 if len(firma.FI_DKZ07) > 0 else None
+    legal_form_entry = firma.FI_DKZ07[0] if len(firma.FI_DKZ07) > 0 else None
 
     return {
         "fnr": company_fnr,
