@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template
 from flask import request
 import requests
+import re
+
 
 
 
@@ -28,11 +30,19 @@ def fetch_companies(query, exact=True, mode="name"):
         print(f"API error: {e}")
         return []
 
+def detect_search_mode(input_str):
+    input_str = input_str.strip()
+    if re.fullmatch(r"\d{6,7}[a-zA-Z]", input_str):
+        return "fnr"
+    else:
+        return "name"
+
 
 @main.route("/search_results")
 def search_results():
     query = request.args.get("query", "")  # Get the query from the form
-    companies = fetch_companies(query, exact=False, mode="name")
+    mode = detect_search_mode(query)
+    companies = fetch_companies(query, exact=False, mode=mode)
 
 
     # Pagination setup
