@@ -14,3 +14,40 @@
   height: 1px;
 }
 
+/* Spinner visuals */
+#search-btn .spinner {
+  display: none;                 /* hidden by default */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border: 2px solid currentColor;  /* uses button text color */
+  border-top-color: transparent;   /* makes the spin arc */
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Keep button size stable and center spinner */
+#search-btn {
+  width: 100%;
+  min-height: 50px;               /* match your button height */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hide text but keep its space so width doesn’t change */
+#search-btn.loading .btn-text {
+  visibility: hidden;
+}
+
+/* Show spinner when loading */
+#search-btn.loading .spinner {
+  display: block;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+

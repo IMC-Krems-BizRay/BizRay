@@ -1,5 +1,10 @@
 from flask import Blueprint, render_template
 from flask import request
+import requests
+import re
+
+
+
 
 main = Blueprint('main', __name__)
 
@@ -7,39 +12,42 @@ main = Blueprint('main', __name__)
 def index():
     return render_template("index.html")
 
+
+def fetch_companies(query, exact=True, mode="name"):
+    url = f"http://127.0.0.1:8000/search/{query}"
+    headers = {
+        "exact_search": str(exact).lower(),  # Convert to "true"/"false"
+        "name_or_fnr": mode
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("Results", [])  # Return only the list
+        else:
+            return []
+    except Exception as e:
+        print(f"API error: {e}")
+        return []
+
+def detect_search_mode(input_str):
+    input_str = input_str.strip()
+    if re.fullmatch(r"\d{6,7}[a-zA-Z]", input_str):
+        return "fnr"
+    else:
+        return "name"
+
+
 @main.route("/search_results")
 def search_results():
-    # Simulated company list (replace with API later)
-    companies = [
-        {"name": "Red Bull GmbH", "fnr": "56247 t"},
-        {"name": "1Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "2Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "3Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "4Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "5Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "6Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "7Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "8Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "9Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "10Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "11Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "12Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "13Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "14Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "15Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "16Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "17Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "18Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "19Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "20Red Bull Studios GmbH", "fnr": "504855 i"},
-        {"name": "21Red Bull Studios GmbH", "fnr": "504855 i"}
-        # Add more companies here for testing
-    ]
-    companies2 = []
+    query = request.args.get("query", "")  # Get the query from the form
+    mode = detect_search_mode(query)
+    companies = fetch_companies(query, exact=False, mode=mode)
+
 
     # Pagination setup
     page = request.args.get('page', 1, type=int)  # Get current page from URL
-    per_page = 10  # Items per page
+    per_page = 15  # Items per page
     total_pages = (len(companies) + per_page - 1) // per_page  # Total pages
 
     # Slice the list to get only the companies for this page
@@ -50,5 +58,6 @@ def search_results():
         companies=companies_paginated,
         page=page,
         total_pages=total_pages,
-        title="Search Results"
+        title="Search Results",
+        query=query
     )

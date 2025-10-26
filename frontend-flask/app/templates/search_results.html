@@ -46,8 +46,11 @@
                               <div class="listing-item" style="display: inline-flex; background-color: #f7f7f7; border-radius: 7px; width: 100%; position: relative; margin-bottom: 30px; padding: 30px;">
                                 <div class="left-image"></div>
                                 <div class="right-content align-self-center">
-                                  <h4>{{ company.name }}</h4>
+                                  <h4>{{ company.name[0] }}</h4>
                                   <h6>FNR: {{ company.fnr }}</h6>
+                                  <h6>Location: {{ company.location }}</h6>
+                                    <h6>Status: {{ company.status }}</h6>
+
                                   <div class="main-white-button mt-3">
                                     <a href="#"><i class="fa fa-eye"></i> View Details</a>
                                   </div>
@@ -75,12 +78,19 @@
                     <ul class="pagination justify-content-center">
                       {% if page > 1 %}
                       <li class="page-item">
-                        <a class="page-link" href="{{ url_for('main.search_results', page=page-1) }}">Previous</a>
+                        <a class="page-link" href="{{ url_for('main.search_results', query=query, page=page-1) }}">Previous</a>
                       </li>
                       {% endif %}
+
+                      {% for p in range(1, total_pages + 1) %}
+                      <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.search_results', query=query, page=p) }}">{{ p }}</a>
+                      </li>
+                      {% endfor %}
+
                       {% if page < total_pages %}
                       <li class="page-item">
-                        <a class="page-link" href="{{ url_for('main.search_results', page=page+1) }}">Next</a>
+                        <a class="page-link" href="{{ url_for('main.search_results', query=query, page=page+1) }}">Next</a>
                       </li>
                       {% endif %}
                     </ul>

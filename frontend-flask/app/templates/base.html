@@ -33,7 +33,10 @@
       <div class="row">
         <div class="col-12">
           <nav class="main-nav">
-            <a href="{{ url_for('main.index') }}" class="logo">BIZRAY </a>
+              <a href="{{ url_for('main.index') }}" class="logo">
+              <img src="{{ url_for('static', filename='img/BR_logo.png') }}" alt="BizRay">
+            </a>
+            <!--<a href="{{ url_for('main.index') }}" class="logo">BIZRAY </a>-->
             <ul class="nav">
               <!--<li><a href="{{ url_for('main.index') }}">Home</a></li>-->
               <!-- <li><a href="{{ url_for('main.search_results') }}">Results</a></li>-->

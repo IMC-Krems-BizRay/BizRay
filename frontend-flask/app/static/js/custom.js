@@ -75,11 +75,14 @@
 
     });
 
-	
+  // Search button spinner
+	$('#search-form').on('submit', function () {
+  const btn = $('#search-btn');
+  btn.addClass('loading').prop('disabled', true);
+  });
+
 
 	
-
-
 
 
 })(window.jQuery);

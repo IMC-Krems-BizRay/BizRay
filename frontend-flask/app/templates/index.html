@@ -85,12 +85,15 @@ https://templatemo.com/tm-564-plot-listing
               
               <div class="col-lg-8 align-self-center">
                   <fieldset>
-                      <input type="address" name="address" class="searchText" placeholder="Enter a company name/ register id" autocomplete="on" required>
+                      <input type="address" name="query" class="searchText" placeholder="Enter a company name/ register id" autocomplete="on" required>
                   </fieldset>
               </div>
               <div class="col-lg-4">                        
                   <fieldset>
-                      <button class="main-button"><i class="fa fa-search"></i> Search Now</button>
+                    <button class="main-button" id="search-btn" type="submit">
+                      <span class="btn-text"><i class="fa fa-search"></i> Search Now</span>
+                      <span class="spinner"></span>
+                    </button>
                   </fieldset>
               </div>
             </div>
