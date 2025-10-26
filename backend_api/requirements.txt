@@ -15,3 +15,5 @@ typing_extensions==4.15.0
 uvicorn==0.37.0
 zeep
 requests
+httpx
+pytest
