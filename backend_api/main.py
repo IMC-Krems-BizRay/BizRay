@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Request, HTTPException
 from zeep.exceptions import Fault
 
-from search import search_by_name, search_by_fnr
+from .search import search_by_name, search_by_fnr
 
-# Boot: uvicorn main:app --reload
+# Boot: uvicorn backend_api.main:app --reload
 app = FastAPI()
 
 def get_header_or_default(request: Request, header: str, default: str) -> str:
@@ -16,7 +16,7 @@ def get_header_or_default(request: Request, header: str, default: str) -> str:
 def confirm_connection():
     return {"Status": "Active", "Available endpoints": ['/search/{company_name}']}
 
-@app.get('/search/{company_name}') #todo: !!!IMPORTANT ADD SEARCH BY ID!!!
+@app.get('/search/{company_name}')
 def search_companies(company_name: str, request: Request):
     # if we have exact_search present only in 'name' search, perhaps it's possible
     # to omit 'name_or_fnr' header and distinct the search only based on exact_search?
