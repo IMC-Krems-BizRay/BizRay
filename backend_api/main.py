@@ -27,7 +27,6 @@ def search_companies(company_name: str, request: Request):
     try:
         if name_or_fnr == "name":
             # Possible values: '0' or '1'
-            # Possibly default to '1' when the header missing
             exact_search = get_header_or_default(request, "exact_search", "1") == "1"
 
             results = search_by_name(company_name, exact_search)

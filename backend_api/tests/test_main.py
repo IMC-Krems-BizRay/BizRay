@@ -12,7 +12,6 @@ def test_confirm_connection():
 
 def test_search_no_headers():
     headers = {}
-    # Use a test company name that exists in your SOAP API
     response = client.get("/search/signa", headers=headers)
     assert response.status_code == 200
     data = response.json()
@@ -24,7 +23,6 @@ def test_search_by_name():
         "name_or_fnr": "name",
         "exact_search": "1"
     }
-    # Use a test company name that exists in your SOAP API
     company_name = "signa"
     response = client.get(f"/search/{company_name}", headers=headers)
     assert response.status_code == 200
