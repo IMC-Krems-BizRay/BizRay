@@ -12,7 +12,8 @@ def test_confirm_connection():
 
 def test_search_no_headers():
     headers = {}
-    response = client.get("/search/signa", headers=headers)
+    company_name = "signa"
+    response = client.get(f"/search/{company_name}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "Results" in data
@@ -54,3 +55,14 @@ def test_search_invalid_fnr():
     assert "detail" in data
     assert data["detail"] == "Firmenbuchnummer ist ungültig! (max. 6 Ziffern plus Prüfzeichen) "
 
+def test_search_invalid_header():
+    headers = {
+        "name_or_fnr": "WABONGUS"
+    }
+
+    test_wabongus = "signa"
+    response = client.get(f"/search/{test_wabongus}", headers=headers)
+    assert response.status_code == 400
+    data = response.json()
+    assert "detail" in data
+    assert data["detail"] == "Invalid 'name_or_fnr' header value."
