@@ -1,7 +1,7 @@
 from zeep import Client
 from zeep.transports import Transport
 from requests import Session
-from .config import API_KEY, WSDL_URL
+from config import API_KEY, WSDL_URL
 
 def create_client():
     session = Session()
