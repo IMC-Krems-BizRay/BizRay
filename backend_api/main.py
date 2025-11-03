@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from zeep.exceptions import Fault
 
-from .search import search_by_name, search_by_fnr
+from search import search_by_name, search_by_fnr
+from company_information import basic_company_info
 
 # Boot: uvicorn backend_api.main:app --reload
 app = FastAPI()
@@ -38,3 +39,12 @@ def search_companies(company_name: str, request: Request):
             raise HTTPException(status_code=400, detail="Invalid 'name_or_fnr' header value.")
     except Fault as e:
         raise HTTPException(status_code=400, detail=e.message)
+
+@app.get('/view/{company_fnr}')
+def view_company(company_fnr: str, request: Request):
+    return {"Results": basic_company_info(company_fnr)}
+
+
+@app.get('/GETALL')
+def getall():
+    return {"Results": GET_ALL()}
