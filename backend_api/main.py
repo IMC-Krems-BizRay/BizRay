@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from zeep.exceptions import Fault
 
-from search import search_by_name, search_by_fnr
-from company_information import basic_company_info
+from backend_api.search import search_by_name, search_by_fnr
+from backend_api.company_information import basic_company_info
 
 # Boot: uvicorn backend_api.main:app --reload
 app = FastAPI()

@@ -1,4 +1,4 @@
-from client import create_client
+from backend_api.client import create_client
 import datetime
 
 def basic_company_info(fnr: str):
