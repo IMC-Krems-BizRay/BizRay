@@ -8,7 +8,7 @@ main = Blueprint("main", __name__)
 
 @main.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", show_back_button=False)
 
 def detect_search_mode(input_str: str) -> str:
     s = input_str.strip()
@@ -76,4 +76,5 @@ def search_results():
         query=query,
         total=total,
         per_page=per_page,
+        show_back_button=True 
     )
