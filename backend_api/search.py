@@ -1,4 +1,4 @@
-from client import create_client
+from .client import create_client
 from datetime import date
 
 def search_by_name(company_name, exact_search = True):

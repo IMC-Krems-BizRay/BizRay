@@ -1,4 +1,4 @@
-from client import create_client
+from .client import create_client
 import datetime
 
 def basic_company_info(fnr: str):
@@ -12,7 +12,6 @@ def basic_company_info(fnr: str):
 
     info = client.service.AUSZUG_V2_(**suche_params)
     #print(info)
-
 
     result = extract_company_data(info)
 

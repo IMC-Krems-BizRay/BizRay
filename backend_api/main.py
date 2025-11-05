@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from zeep.exceptions import Fault
 
-from search import search_by_name, search_by_fnr
-from company_information import basic_company_info
+from .search import search_by_name, search_by_fnr
+from .company_information import basic_company_info
 
 # Boot: uvicorn backend_api.main:app --reload
 app = FastAPI()
@@ -30,11 +30,11 @@ def search_companies(company_name: str, request: Request):
             # Possible values: '0' or '1'
             exact_search = get_header_or_default(request, "exact_search", "1") == "1"
 
-            results = search_by_name(company_name, exact_search)
-            return {"Results": results}
+            result = search_by_name(company_name, exact_search)
+            return {"result": result}
         elif name_or_fnr == "fnr":
-            results = search_by_fnr(company_name)
-            return {"Results": results}
+            result = search_by_fnr(company_name)
+            return {"result": result}
         else:
             raise HTTPException(status_code=400, detail="Invalid 'name_or_fnr' header value.")
     except Fault as e:
@@ -42,9 +42,9 @@ def search_companies(company_name: str, request: Request):
 
 @app.get('/view/{company_fnr}')
 def view_company(company_fnr: str, request: Request):
-    return {"Results": basic_company_info(company_fnr)}
+    return {"result": basic_company_info(company_fnr)}
 
 
 @app.get('/GETALL')
 def getall():
-    return {"Results": GET_ALL()}
+    return {"result": GET_ALL()}
