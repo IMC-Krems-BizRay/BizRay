@@ -76,11 +76,12 @@
     });
 
   // Search button spinner
-	$('#search-form').on('submit', function () {
-  const btn = $('#search-btn');
-  btn.addClass('loading').prop('disabled', true);
+  $(document).on('submit', '#search-form', function () {
+    const btn = $('#search-btn');
+    btn.addClass('loading').prop('disabled', true);
   });
 
+  
 
 	
 
