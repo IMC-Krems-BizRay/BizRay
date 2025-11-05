@@ -1,7 +1,5 @@
-# routes.py
 from flask import Blueprint, render_template, request
-import requests
-import re
+from .utils import fetch_companies, detect_search_mode
 import math
 
 main = Blueprint("main", __name__)
@@ -13,47 +11,6 @@ def index():
 @main.route("/login")
 def login():
     return render_template("login.html", page = 'login')
-
-
-def detect_search_mode(input_str: str) -> str:
-    s = input_str.strip()
-    return "fnr" if re.fullmatch(r"\d{6,7}[a-zA-Z]", s) else "name"
-
-def _normalize_companies(payload):
-    """Return a list of company dicts from various shapes."""
-    if payload is None:
-        return []
-    if isinstance(payload, list):
-        return payload
-    if isinstance(payload, dict):
-        # common keys your backend might use
-        for key in ("Results", "results", "data", "items", "companies"):
-            val = payload.get(key)
-            if isinstance(val, list):
-                return val
-        # mapping id -> object
-        if payload and all(isinstance(v, dict) for v in payload.values()):
-            return list(payload.values())
-    # single object fallback
-    return [payload]
-
-def fetch_companies(query: str, exact: bool = True, mode: str = "name"):
-    # Backend expects /search/{query} and headers, not query params
-    url = f"http://127.0.0.1:8000/search/{query}"
-    headers = {
-        "exact_search": str(exact).lower(),  # "true"/"false"
-        "name_or_fnr": mode,                 # "name" or "fnr"
-    }
-    try:
-        resp = requests.get(url, headers=headers, timeout=15)
-        if resp.status_code == 404:
-            return []  # no matches route or not found
-        resp.raise_for_status()
-        data = resp.json()
-        return _normalize_companies(data)  # <- keep the normalizer from earlier
-    except Exception as e:
-        print(f"API error: {e}")
-        return []
 
 
 @main.route("/search_results")
