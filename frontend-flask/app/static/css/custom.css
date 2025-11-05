@@ -51,4 +51,56 @@
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
+/* Make header layout stable */
+.header-area .main-nav { 
+  display: flex; 
+  align-items: center; 
+}
+.header-area .main-nav .logo {
+  margin-right: auto;            
+}
 
+.header-area .main-nav .nav {
+  display: flex;
+  align-items: center;
+  gap: 5px;                     /* space between Back & Login */
+  margin-left: auto;             /* push to the right */
+}
+
+.header-area .main-nav .nav li { 
+  margin: 0;
+}
+
+
+.header-area .main-nav .nav .main-white-button a {
+  display: inline-block;
+  padding: 10px 18px;
+  white-space: nowrap;          
+}
+
+/* Optional: tighter gap on small screens */
+@media (max-width: 992px) {
+  .header-area .main-nav .nav { gap: 12px; }
+}
+
+/* Fix alignment of header buttons */
+.header-area .main-nav .nav .main-white-button a {
+  background-color: #fff !important;
+  color: #1a1a1a !important;
+  border-radius: 8px;
+  padding: 0 22px;                  /* horizontal padding only */
+  height: 40px;                     /* fixed button height */
+  display: flex;                    /* enables centering */
+  align-items: center;              /* vertical centering */
+  justify-content: center;          /* horizontal centering */
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;        /* matches your theme style */
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.header-area .main-nav .nav .main-white-button a:hover {
+  background-color: #000 !important;
+  color: #fff !important;
+}

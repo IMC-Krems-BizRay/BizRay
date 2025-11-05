@@ -8,7 +8,12 @@ main = Blueprint("main", __name__)
 
 @main.route("/")
 def index():
-    return render_template("index.html", show_back_button=False)
+    return render_template("index.html", page = 'index')
+
+@main.route("/login")
+def login():
+    return render_template("login.html", page = 'login')
+
 
 def detect_search_mode(input_str: str) -> str:
     s = input_str.strip()

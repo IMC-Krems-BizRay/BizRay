@@ -43,10 +43,18 @@
               <!--<li><a href="{{ url_for('main.index') }}">Home</a></li>-->
               <!-- <li><a href="{{ url_for('main.search_results') }}">Results</a></li>-->
               <!--<li><a href="#">Contact</a></li>-->
-              {% if show_back_button %}
+              {% if page != "index" %}
               <li>
                 <div class="main-white-button">
                   <a href="{{ url_for('main.index') }}"></i> Back to search</a>
+                </div>
+              </li>
+              {% endif %}
+
+              {% if page != "login" %}
+              <li>
+                <div class="main-white-button">
+                  <a href="{{ url_for('main.login') }}">Login</a>
                 </div>
               </li>
               {% endif %}
