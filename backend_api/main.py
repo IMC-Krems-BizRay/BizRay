@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, HTTPException
 from zeep.exceptions import Fault
 
 from .search import search_by_name, search_by_fnr
-from .company_information import basic_company_info
+from .company_information import company_info, get_document_data
 
 # Boot: uvicorn backend_api.main:app --reload
 app = FastAPI()
@@ -15,7 +15,7 @@ def get_header_or_default(request: Request, header: str, default: str) -> str:
 
 @app.get('/')
 def confirm_connection():
-    return {"Status": "Active", "Available endpoints": ['/search/{company_name}']}
+    return {"Status": "Active", "Available endpoints": ['/search/{company_name}', '/view/{company_fnr}']}
 
 @app.get('/search/{company_name}')
 def search_companies(company_name: str, request: Request):
@@ -42,9 +42,9 @@ def search_companies(company_name: str, request: Request):
 
 @app.get('/view/{company_fnr}')
 def view_company(company_fnr: str, request: Request):
-    return {"result": basic_company_info(company_fnr)}
+    return {"result": company_info(company_fnr)}
 
 
-@app.get('/GETALL')
-def getall():
-    return {"result": GET_ALL()}
+@app.get('/docs/{fnr}') #for testing, don't use on frontend
+def docs(fnr):
+    return {"res": get_document_data(fnr)}
