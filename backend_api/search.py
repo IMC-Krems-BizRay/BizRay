@@ -1,3 +1,4 @@
+from cachetools import TTLCache
 from .client import create_client
 from datetime import date
 
@@ -8,16 +9,47 @@ class SearchMode(Enum):
     NAME = 0,
     FNR = 1
 
+# LRU cache with 10 minutes of expiry (the time limit is to prevent frequently used items to never update)
+name_search_cache = TTLCache(maxsize=128, ttl=600)
+
+def check_name_search_cache(term):
+    global name_search_cache
+    if term in name_search_cache:
+        return name_search_cache[term]
+
+    result = search_by_name(term)
+    name_search_cache[term] = result
+    return result
+
 def detect_search_mode(term: str) -> SearchMode:
     term = term.strip()
     return SearchMode.FNR if re.fullmatch(r"\d{6,7}[a-zA-Z]", term) else SearchMode.NAME
 
-def search(term: str) -> dict | list[dict]:
+def search(term: str, page: int) -> dict:
     mode = detect_search_mode(term)
     if mode == SearchMode.NAME:
-        return search_by_name(term)
+        companies = check_name_search_cache(term)
+
+        # pagination
+        per_page = 15
+        total = len(companies)
+        total_pages = max(1, total // per_page + 1)
+        page = max(1, min(page, total_pages))
+
+        start = (page - 1) * per_page
+        end = start + per_page
+
+        # Can send more info if needed
+        return {
+            "total_pages": total_pages,
+            "companies": companies[start:end]
+        }
+    # This ideally should redirect towards the company view page and it's not autosuggested
     elif mode == SearchMode.FNR:
-        return search_by_fnr(term)
+        return {
+            "total_pages": 1,
+            "companies": [search_by_fnr(term)]
+        }
 
 def search_by_name(company_name) -> list[dict]:
     client = create_client() #for now

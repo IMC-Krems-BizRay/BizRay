@@ -20,26 +20,15 @@ def register():
 @main.route("/search_results")
 def search_results():
     query = request.args.get("query", "", type=str)
-    companies = fetch_companies(query)
-
-    # pagination
-    per_page = 15
-    total = len(companies)
-    total_pages = max(1, math.ceil(total / per_page))
-    page = max(1, min(request.args.get("page", 1, type=int), total_pages))
-
-    start = (page - 1) * per_page
-    end = start + per_page
-    companies_paginated = companies[start:end]
+    page = request.args.get("page", 1, type=int)
+    result = fetch_companies(query, page)
 
     return render_template(
         "search_results.html",
-        companies=companies_paginated,
+        companies=result["companies"],
         page=page,
-        total_pages=total_pages,
+        total_pages=result["total_pages"],
         title="Search Results",
         query=query,
-        total=total,
-        per_page=per_page,
         show_back_button=True 
     )

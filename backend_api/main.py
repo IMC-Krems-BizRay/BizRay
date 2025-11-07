@@ -11,9 +11,9 @@ def confirm_connection():
     return {"Status": "Active", "Available endpoints": ['/search/{term}', '/view/{company_fnr}']}
 
 @app.get('/search/{term}')
-def search_companies(term: str):
+def search_companies(term: str, page: int):
     try:
-        result = search(term)
+        result = search(term, page)
         return {"result": result}
     except Fault as e:
         raise HTTPException(status_code=400, detail=e.message)

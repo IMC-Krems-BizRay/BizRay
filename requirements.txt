@@ -17,5 +17,6 @@ zeep
 requests
 httpx
 pytest
+cachetools
 Flask==3.1.1
 Jinja2==3.1.2
