@@ -14,6 +14,8 @@ name_search_cache = TTLCache(maxsize=128, ttl=600)
 
 def check_name_search_cache(term):
     global name_search_cache
+    # Ignore case
+    term = term.lower()
     if term in name_search_cache:
         return name_search_cache[term]
 
