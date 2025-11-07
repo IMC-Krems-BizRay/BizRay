@@ -35,7 +35,7 @@ def search(term: str, page: int) -> dict:
         # pagination
         per_page = 15
         total = len(companies)
-        total_pages = max(1, total // per_page + 1)
+        total_pages = max(1, total // (per_page + 1) + 1)
         page = max(1, min(page, total_pages))
 
         start = (page - 1) * per_page
