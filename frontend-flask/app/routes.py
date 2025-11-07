@@ -12,6 +12,10 @@ def index():
 def login():
     return render_template("login.html", page = 'login')
 
+@main.route("/register")
+def register():
+    return render_template("register.html", page="register")
+
 
 @main.route("/search_results")
 def search_results():

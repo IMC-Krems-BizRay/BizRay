@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Register - BizRay{% endblock %}
+
+{% block content %}
+<section class="section" style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-6 col-md-8">
+        <div class="card shadow-sm p-5" style="border-radius: 16px; background-color: #ffffff;">
+          <h3 class="text-center mb-4">Create an Account</h3>
+          
+          <form method="POST" action="{{ url_for('main.register') }}">
+            <div class="form-group mb-3">
+              <label for="username">Username</label>
+              <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+            
+            <div class="form-group mb-3">
+              <label for="email">Email</label>
+              <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required>
+            </div>
+            
+            <div class="form-group mb-3">
+              <label for="password">Password</label>
+              <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+
+            <div class="form-group mb-4">
+              <label for="confirm_password">Confirm Password</label>
+              <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required>
+            </div>
+
+            <button type="submit" class="main-button w-100">Register</button>
+          </form>
+
+          <div class="text-center mt-3">
+            <p>Already have an account?
+              <a href="{{ url_for('main.login') }}" class="create-account-link">Log in</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

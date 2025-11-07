@@ -91,11 +91,11 @@
   padding: 0 22px;                  /* horizontal padding only */
   height: 40px;                     /* fixed button height */
   display: flex;                    /* enables centering */
-  align-items: center;              /* vertical centering */
-  justify-content: center;          /* horizontal centering */
+  align-items: center;              
+  justify-content: center;          
   font-weight: 600;
   letter-spacing: 0.5px;
-  text-transform: uppercase;        /* matches your theme style */
+  text-transform: uppercase;        
   text-decoration: none;
   transition: all 0.2s ease-in-out;
 }
@@ -103,4 +103,54 @@
 .header-area .main-nav .nav .main-white-button a:hover {
   background-color: #000 !important;
   color: #fff !important;
+}
+
+/* Style for "Create Account" link */
+.create-account-link {
+  color: #4b4bff;             
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.create-account-link:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+/* Register page */
+.card {
+  border: none;
+}
+
+.card h3 {
+  font-weight: 700;
+  color: #333;
+}
+
+.form-control {
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 10px 12px;
+}
+
+.form-control:focus {
+  border-color: #4b4bff;
+  box-shadow: 0 0 0 0.15rem rgba(75, 75, 255, 0.25);
+}
+
+.main-button.w-100 {
+  text-align: center;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background-color: #4b4bff;
+  color: white;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.main-button.w-100:hover {
+  background-color: #000;
+  color: white;
 }
