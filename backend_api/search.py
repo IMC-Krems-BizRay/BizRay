@@ -1,3 +1,5 @@
+import math
+
 from cachetools import TTLCache
 from .client import create_client
 from datetime import date
@@ -35,7 +37,7 @@ def search(term: str, page: int) -> dict:
         # pagination
         per_page = 15
         total = len(companies)
-        total_pages = max(1, total // (per_page + 1) + 1)
+        total_pages = max(1, math.ceil(total / per_page))
         page = max(1, min(page, total_pages))
 
         start = (page - 1) * per_page
