@@ -1,7 +1,5 @@
 from flask import Response
 import requests
-import re
-
 
 def response_to_data(response: Response):
     payload = response.json()
@@ -13,20 +11,13 @@ def response_to_data(response: Response):
 
     return payload["result"]
 
-def detect_search_mode(input_str: str) -> str:
-    s = input_str.strip()
-    return "fnr" if re.fullmatch(r"\d{6,7}[a-zA-Z]", s) else "name"
 
-def fetch_companies(query: str, exact: bool = True, mode: str = "name"):
+def fetch_companies(term: str):
     # Backend expects /search/{query} and headers, not query params
-    url = f"http://127.0.0.1:8000/search/{query}"
-    headers = {
-        "exact_search": str(exact).lower(), # "true" or "false"
-        "name_or_fnr": mode,                # "name" or "fnr"
-    }
+    url = f"http://127.0.0.1:8000/search/{term}"
     try:
-        resp = requests.get(url, headers=headers, timeout=15)
-        if resp.status_code == 404:
+        resp = requests.get(url, timeout=15)
+        if resp.status_code != 200:
             return []  # no matches route or not found
         resp.raise_for_status()
 

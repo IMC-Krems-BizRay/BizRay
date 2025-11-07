@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request
-from .utils import fetch_companies, detect_search_mode
+from .utils import fetch_companies
 import math
 
 main = Blueprint("main", __name__)
@@ -20,8 +20,7 @@ def register():
 @main.route("/search_results")
 def search_results():
     query = request.args.get("query", "", type=str)
-    mode = detect_search_mode(query)
-    companies = fetch_companies(query, exact=False, mode=mode)
+    companies = fetch_companies(query)
 
     # pagination
     per_page = 15

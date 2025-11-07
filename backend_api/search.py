@@ -1,13 +1,31 @@
 from .client import create_client
 from datetime import date
 
-def search_by_name(company_name, exact_search = True):
+import re
+from enum import Enum
+
+class SearchMode(Enum):
+    NAME = 0,
+    FNR = 1
+
+def detect_search_mode(term: str) -> SearchMode:
+    term = term.strip()
+    return SearchMode.FNR if re.fullmatch(r"\d{6,7}[a-zA-Z]", term) else SearchMode.NAME
+
+def search(term: str) -> dict | list[dict]:
+    mode = detect_search_mode(term)
+    if mode == SearchMode.NAME:
+        return search_by_name(term)
+    elif mode == SearchMode.FNR:
+        return search_by_fnr(term)
+
+def search_by_name(company_name) -> list[dict]:
     client = create_client() #for now
 
     #SUCHFIRMA finds the ids of companies with the name like FIRMENWORTLAUT
     suche_params = {
         "FIRMENWORTLAUT": company_name,
-        "EXAKTESUCHE": exact_search, #we can change this later
+        "EXAKTESUCHE": False, #we can change this later
         "SUCHBEREICH": 1, #can change later
         "GERICHT": "", #DO LATER !?!?
         "RECHTSFORM": "",
@@ -38,7 +56,7 @@ def search_by_name(company_name, exact_search = True):
 
     return results
 
-def search_by_fnr(company_fnr):
+def search_by_fnr(company_fnr) -> dict:
     client = create_client()
 
     suche_params = {
@@ -48,15 +66,16 @@ def search_by_fnr(company_fnr):
     }
 
     suche_response = client.service.AUSZUG_V2_(**suche_params)
-
     firma = suche_response.FIRMA
 
-    legal_form_entry = firma.FI_DKZ07[0] if len(firma.FI_DKZ07) > 0 else None
+    # legal_form_entry = firma.FI_DKZ07[0] if len(firma.FI_DKZ07) > 0 else None
 
     return {
         "fnr": company_fnr,
+        "status": "active", # for now
         "name": firma.FI_DKZ02[0].BEZEICHNUNG,
         "location": firma.FI_DKZ06[0].SITZ,
-        "legal_form": {"code": legal_form_entry.RECHTSFORM.CODE, "text": legal_form_entry.RECHTSFORM.TEXT} if legal_form_entry else None,
-        "legal_status": "active" if legal_form_entry and legal_form_entry.AUFRECHT else "inactive"
+        # Not needed
+        # "legal_form": {"code": legal_form_entry.RECHTSFORM.CODE, "text": legal_form_entry.RECHTSFORM.TEXT} if legal_form_entry else None,
+        # "legal_status": "active" if legal_form_entry and legal_form_entry.AUFRECHT else "inactive"
     }
