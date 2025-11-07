@@ -31,7 +31,7 @@ def login():
 def logout():
     session.pop("logged_in", None)
     session.pop("user_id", None)
-    flash("Logged out successfully.", "info")
+    flash("Logout successful.", "info")
     return redirect(url_for("main.index"))
 
 @main.route("/register", methods=["GET", "POST"])
