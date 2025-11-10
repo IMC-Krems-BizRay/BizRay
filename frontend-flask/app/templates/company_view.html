@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Company View{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+    <!-- Basic Information -->
+    <div class="card mb-4">
+        <div class="card-header"><h4>Basic Information</h4></div>
+        <div class="card-body">
+            <p><strong>Company Name:</strong> {{ company.basic_info.company_name }}</p>
+            <p><strong>Legal Form:</strong> {{ company.basic_info.legal_form }}</p>
+            <p><strong>Company Number:</strong> {{ company.basic_info.company_number }}</p>
+            <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
+        </div>
+    </div>
+
+    <!-- Location -->
+    <div class="card mb-4">
+        <div class="card-header"><h4>Location</h4></div>
+        <div class="card-body">
+            <p><strong>Address:</strong> {{ company.location.street }} {{ company.location.house_number }}</p>
+            <p><strong>City:</strong> {{ company.location.postal_code }} {{ company.location.city }}</p>
+            <p><strong>Country:</strong> {{ company.location.country }}</p>
+        </div>
+    </div>
+
+
+    <!-- Management -->
+    <div class="card mb-4">
+        <div class="card-header"><h4>Management</h4></div>
+        <div class="card-body">
+            {% for manager in company.management %}
+            <div class="mb-3">
+                <p><strong>Name:</strong> {{ manager.name }}</p>
+                <p><strong>Role:</strong> {{ manager.role }}</p>
+                <p><strong>Appointed:</strong> {{ manager.appointed_on }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+
+
+    <!-- Financial -->
+    <div class="card mb-4">
+        <div class="card-header"><h4>Financial Information</h4></div>
+        <div class="card-body">
+            <p><strong>Director:</strong> {{ company.financial.director_name }}</p>
+            <p><strong>Total Assets:</strong> {{ company.financial.total_assets }}</p>
+        </div>
+    </div>
+
+
+
+    <!-- History -->
+    <div class="card mb-4">
+        <div class="card-header"><h4>Company History</h4></div>
+        <div class="card-body">
+            {% for event in company.history %}
+            <div class="mb-3">
+                <p><strong>Date:</strong> {{ event.event_date }}</p>
+                <p><strong>Event:</strong> {{ event.event }}</p>
+                <p><strong>Court:</strong> {{ event.court }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

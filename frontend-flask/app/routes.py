@@ -1,4 +1,4 @@
-from .utils import fetch_companies
+from .utils import fetch_companies, get_company_data
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from .models import db, User, bcrypt
 
@@ -76,4 +76,14 @@ def search_results():
         title="Search Results",
         query=query,
         show_back_button=True 
+    )
+
+@main.route('/view/<fnr>')
+def view_company(fnr):
+    result = get_company_data(fnr)
+    return render_template(
+        "company_view.html",
+        company=result,
+        title="Company view",
+        show_back_button=True
     )
