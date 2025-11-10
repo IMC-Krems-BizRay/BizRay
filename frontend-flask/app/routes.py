@@ -66,7 +66,20 @@ def register():
 def search_results():
     query = request.args.get("query", "", type=str)
     page = request.args.get("page", 1, type=int)
-    result = fetch_companies(query, page)
+
+    try:
+        result = fetch_companies(query, page)
+        print(result)
+
+        # Safely extract values
+        companies = result.get("companies", [])
+        total_pages = result.get("total_pages", 0)
+
+    except Exception as e:
+        print(f"Error while fetching or processing results: {e}")
+        # fallback values if something goes wrong
+        result = {'total_pages': 1, 'companies': []}
+
 
     return render_template(
         "search_results.html",
@@ -75,7 +88,7 @@ def search_results():
         total_pages=result["total_pages"],
         title="Search Results",
         query=query,
-        show_back_button=True 
+        show_back_button=True
     )
 
 @main.route('/view/<fnr>')
