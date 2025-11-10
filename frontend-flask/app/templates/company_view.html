@@ -1,70 +1,251 @@
 {% extends "base.html" %}
-{% block title %}Company View{% endblock %}
+{% block title %}Company – {{ company.basic_info.company_name or 'Details' }}{% endblock %}
+
 {% block content %}
 
-<div class="container mt-4">
-    <!-- Basic Information -->
-    <div class="card mb-4">
-        <div class="card-header"><h4>Basic Information</h4></div>
-        <div class="card-body">
-            <p><strong>Company Name:</strong> {{ company.basic_info.company_name }}</p>
-            <p><strong>Legal Form:</strong> {{ company.basic_info.legal_form }}</p>
-            <p><strong>Company Number:</strong> {{ company.basic_info.company_number }}</p>
-            <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  .map-container {
+    width: 100%;
+    height: 320px;      /* adjust if you want taller */
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f3f4f6;
+  }
+</style>
+{% endblock %}
+
+<!-- Hero heading (same component used by category.html) -->
+<div class="page-heading">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-10">
+        <div class="top-text header-text">
+          <h6>Company details</h6>
+          <h2>{{ company.basic_info.company_name }}</h2>
         </div>
+      </div>
     </div>
-
-    <!-- Location -->
-    <div class="card mb-4">
-        <div class="card-header"><h4>Location</h4></div>
-        <div class="card-body">
-            <p><strong>Address:</strong> {{ company.location.street }} {{ company.location.house_number }}</p>
-            <p><strong>City:</strong> {{ company.location.postal_code }} {{ company.location.city }}</p>
-            <p><strong>Country:</strong> {{ company.location.country }}</p>
-        </div>
-    </div>
-
-
-    <!-- Management -->
-    <div class="card mb-4">
-        <div class="card-header"><h4>Management</h4></div>
-        <div class="card-body">
-            {% for manager in company.management %}
-            <div class="mb-3">
-                <p><strong>Name:</strong> {{ manager.name }}</p>
-                <p><strong>Role:</strong> {{ manager.role }}</p>
-                <p><strong>Appointed:</strong> {{ manager.appointed_on }}</p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-
-
-    <!-- Financial -->
-    <div class="card mb-4">
-        <div class="card-header"><h4>Financial Information</h4></div>
-        <div class="card-body">
-            <p><strong>Director:</strong> {{ company.financial.director_name }}</p>
-            <p><strong>Total Assets:</strong> {{ company.financial.total_assets }}</p>
-        </div>
-    </div>
-
-
-
-    <!-- History -->
-    <div class="card mb-4">
-        <div class="card-header"><h4>Company History</h4></div>
-        <div class="card-body">
-            {% for event in company.history %}
-            <div class="mb-3">
-                <p><strong>Date:</strong> {{ event.event_date }}</p>
-                <p><strong>Event:</strong> {{ event.event }}</p>
-                <p><strong>Court:</strong> {{ event.court }}</p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
+  </div>
 </div>
 
+<!-- Tabs (use the naccs markup from category.html) -->
+<div class="category-post">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+
+        <div class="naccs">
+          <div class="grid">
+            <div class="row">
+              <div class="col-lg-12">
+                <!-- MENU -->
+                <div class="menu">
+                  <div class="first-thumb active">
+                    <div class="thumb">
+                      <span class="icon">
+                        <img src="{{ url_for('static', filename='img/overview-icon.png') }}" style="max-width: 75%;height: auto;" alt="">
+                        <h4>Overview</h4>
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="thumb">
+                      <span class="icon">
+                        <img src="{{ url_for('static', filename='img/location-icon.png') }}" style="max-width: 75%;height: auto;" alt="">
+                        <h4>Location</h4>
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="thumb">
+                      <span class="icon">
+                        <img src="{{ url_for('static', filename='img/management-icon.png') }}" style="max-width: 95%;height: auto;" alt="">
+                        <h4>Management</h4>
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="thumb">
+                      <span class="icon">
+                        <img src="{{ url_for('static', filename='img/financial-icon.png') }}" style="max-width: 100%;height: auto;" alt="">
+                        <h4>Financial</h4>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="last-thumb">
+                    <div class="thumb">
+                      <span class="icon">
+                        <img src="{{ url_for('static', filename='img/history-icon.jpg') }}" style="max-width: 65%;height: auto;" alt="">
+                        <h4>History</h4>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <!-- /MENU -->
+              </div>
+
+              <div class="col-lg-12">
+                <!-- PANES -->
+                <ul class="nacc">
+                  <!-- Overview -->
+                  <li class="active">
+                    <div>
+                      <div class="thumb">
+                        <div class="row" style="margin-top:35px ;">
+                          <div class="col-lg-12">
+                            <div class="description">
+                              <div class="row">
+                                <div class="col-lg-12">
+                                  <p><strong>Company Name:</strong> {{ company.basic_info.company_name }}</p>
+                                  <p><strong>Legal Form:</strong> {{ company.basic_info.legal_form }}</p>
+                                  <p><strong>Company Number:</strong> {{ company.basic_info.company_number }}</p>
+                                  <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+
+                  <!-- Location -->
+                  <li>
+                    <div>
+                      <div class="thumb">
+                        <div class="row" style="margin-top:35px ;">
+                          <div class="col-lg-12">
+                            <div class="description">
+                              <div class="row">
+                                <div class="col-lg-12">
+                                  <p><strong>Address:</strong> {{ company.location.street }} {{ company.location.house_number }}</p>
+                                  <p><strong>City:</strong> {{ company.location.postal_code }} {{ company.location.city }}</p>
+                                  <p><strong>Country:</strong> {{ company.location.country }}</p>
+                                  
+                                  <!-- Map + GMAPS link -->
+                                  <div id="company-map"
+                                      class="map-container mt-3"
+                                      data-address="{{ company.location.street }} {{ company.location.house_number }}, {{ company.location.postal_code }} {{ company.location.city }}, {{ company.location.country }}">
+                                  </div>
+
+                                  <div class="mt-2">
+                                    <a class="btn btn-light"
+                                      target="_blank"
+                                      href="https://www.google.com/maps/search/?api=1&query={{ (company.location.street ~ ' ' ~ company.location.house_number ~ ', ' ~ company.location.postal_code ~ ' ' ~ company.location.city ~ ', ' ~ company.location.country)|replace(' ', '+') }}">
+                                      Open in Google Maps
+                                    </a>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+
+                  </li>
+
+                  <!-- Management -->
+                  <li>
+                    <div>
+                      <div class="thumb">
+                        <div class="row" style="margin-top:35px ;"  >
+                          <div class="col-lg-12">
+                            <div class="description">
+                              <div class="row" >
+                                <div class="col-lg-12">
+                                  {% set managers = company.management or [] %}
+                                  {% if managers %}
+                                    {% for m in managers %}
+                                      <div class="mb-3">
+                                        <p><strong>Name:</strong> {{ m.name }}</p>
+                                        <p><strong>Role:</strong> {{ m.role }}</p>
+                                        <p><strong>Appointed:</strong> {{ m.appointed_on }}</p>
+                                      </div>
+                                    {% endfor %}
+                                  {% else %}
+                                    <p>No management records available.</p>
+                                  {% endif %}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+
+                  <!-- Financial -->
+                  <li>
+                    <div>
+                      <div class="thumb">
+                        <div class="row" style="margin-top:35px ;" >
+                          <div class="col-lg-12">
+                            <div class="description">
+                              <div class="row">
+                                <div class="col-lg-12">
+                                  <p><strong>Director:</strong> {{ company.financial.director_name }}</p>
+                                  <p><strong>Total Assets:</strong> {{ company.financial.total_assets }}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          
+
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+
+                  <!-- History -->
+                  <li>
+                    <div>
+                      <div class="thumb">
+                        <div class="row" style="margin-top:35px ;">
+                          <div class="col-lg-12">
+                            <div class="description">
+                              <div class="row">
+                                <div class="col-lg-12">
+                                  {% set events = company.history or [] %}
+                                  {% if events %}
+                                    {% for e in events %}
+                                      <div class="mb-3">
+                                        <p><strong>Date:</strong> {{ e.event_date }}</p>
+                                        <p><strong>Event:</strong> {{ e.event }}</p>
+                                        <p><strong>Court:</strong> {{ e.court }}</p>
+                                      </div>
+                                    {% endfor %}
+                                  {% else %}
+                                    <p>No history available.</p>
+                                  {% endif %}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+                <!-- /PANES -->
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /col -->
+    </div><!-- /row -->
+  </div><!-- /container -->
+</div><!-- /category-post -->
+
 {% endblock %}
+
