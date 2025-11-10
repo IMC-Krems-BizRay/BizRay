@@ -1,5 +1,5 @@
 from .utils import fetch_companies, get_company_data
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
 from .models import db, User, bcrypt
 
 main = Blueprint("main", __name__)
@@ -80,10 +80,27 @@ def search_results():
 
 @main.route('/view/<fnr>')
 def view_company(fnr):
-    result = get_company_data(fnr)
+    result = get_company_data(fnr)  # may return list or dict
+
+    # normalize to a single dict
+    if isinstance(result, list):
+        if not result:
+            abort(404, description="Company not found")
+        company = result[0]
+    elif isinstance(result, dict):
+        # unwrap common envelopes like {"Results": [...]}
+        if "Results" in result and isinstance(result["Results"], list):
+            if not result["Results"]:
+                abort(404, description="Company not found")
+            company = result["Results"][0]
+        else:
+            company = result
+    else:
+        abort(500, description="Unexpected data shape from get_company_data")
+
     return render_template(
         "company_view.html",
-        company=result,
+        company=company,
         title="Company view",
         show_back_button=True
     )
