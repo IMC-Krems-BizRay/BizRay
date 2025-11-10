@@ -4,6 +4,8 @@ from .models import db, User, bcrypt
 
 main = Blueprint("main", __name__)
 
+
+
 @main.route("/")
 def index():
     return render_template("index.html", page='index', logged_in=session.get("logged_in"))
@@ -78,9 +80,30 @@ def search_results():
         show_back_button=True 
     )
 
+
+
 @main.route('/view/<fnr>')
 def view_company(fnr):
-    result = get_company_data(fnr)  # may return list or dict
+    # If NOT logged in: render locked view (no sensitive data)
+    if not session.get("logged_in"):
+        company_stub = {
+            "basic_info": {"company_name": "Login required"},
+            "location": {"street": "", "house_number": "", "postal_code": "", "city": "", "country": ""},
+            "management": [],
+            "financial": {"director_name": "", "total_assets": ""},
+            "history": []
+        }
+        return render_template(
+            "company_view.html",
+            locked=True,
+            login_next=request.full_path,   # so login can send them back here
+            company=company_stub,           # minimal structure so template doesn't crash
+            title="Company view",
+            show_back_button=True
+        )
+
+    # Logged in: fetch and normalize real data
+    result = get_company_data(fnr)
 
     # normalize to a single dict
     if isinstance(result, list):
@@ -88,7 +111,6 @@ def view_company(fnr):
             abort(404, description="Company not found")
         company = result[0]
     elif isinstance(result, dict):
-        # unwrap common envelopes like {"Results": [...]}
         if "Results" in result and isinstance(result["Results"], list):
             if not result["Results"]:
                 abort(404, description="Company not found")
@@ -98,8 +120,16 @@ def view_company(fnr):
     else:
         abort(500, description="Unexpected data shape from get_company_data")
 
+    # normalize address (street sometimes a list)
+    loc = company.get("location", {})
+    street = loc.get("street")
+    if isinstance(street, list):
+        loc["street"] = " ".join([s for s in street if s])
+    company["location"] = loc
+
     return render_template(
         "company_view.html",
+        locked=False,
         company=company,
         title="Company view",
         show_back_button=True

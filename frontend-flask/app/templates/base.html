@@ -46,7 +46,7 @@
               {% if page != "index" %}
               <li>
                 <div class="main-white-button">
-                  <a href="{{ url_for('main.index') }}">Back to search</a>
+                  <a class="pill-btn back-btn" href="{{ url_for('main.index') }}">Back to search</a>
                 </div>
               </li>
               {% endif %}
@@ -55,7 +55,7 @@
               <!-- Show only when logged in -->
               <li>
                 <div class="main-white-button">
-                  <a href="{{ url_for('main.logout') }}">Logout</a>
+                  <a class="pill-btn back-btn"  href="{{ url_for('main.logout') }}">Logout</a>
                 </div>
               </li>
               {% else %}
@@ -63,7 +63,7 @@
               {% if page != "login" %}
               <li>
                 <div class="main-white-button">
-                  <a href="{{ url_for('main.login') }}">Login</a>
+                  <a class="pill-btn back-btn"  href="{{ url_for('main.login') }}">Login</a>
                 </div>
               </li>
               {% endif %}

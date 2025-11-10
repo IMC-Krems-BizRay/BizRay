@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Company – {{ company.basic_info.company_name or 'Details' }}{% endblock %}
 
+
 {% block content %}
+
+<div id="company-page" class="{% if locked %}content-blurred{% endif %}">
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -15,7 +18,6 @@
   }
 </style>
 {% endblock %}
-
 <!-- Hero heading (same component used by category.html) -->
 <div class="page-heading">
   <div class="container">
@@ -121,20 +123,35 @@
                             <div class="description">
                               <div class="row">
                                 <div class="col-lg-12">
-                                  <p><strong>Address:</strong> {{ company.location.street }} {{ company.location.house_number }}</p>
-                                  <p><strong>City:</strong> {{ company.location.postal_code }} {{ company.location.city }}</p>
-                                  <p><strong>Country:</strong> {{ company.location.country }}</p>
-                                  
+                                  {# --- Normalize the address --- #}
+                                  {% set raw_street = company.location.street %}
+                                  {% if raw_street is sequence and (raw_street is not string) %}
+                                    {% set street = raw_street | select | join(' ') %}
+                                  {% else %}
+                                    {% set street = raw_street %}
+                                  {% endif %}
+
+                                  {% set parts = [
+                                    street,
+                                    company.location.house_number,
+                                    company.location.postal_code,
+                                    company.location.city,
+                                    company.location.country
+                                  ] %}
+                                  {% set address = parts | select | join(' ') %}
+
+                                  {# --- Display details --- #}
+                                  <p><strong>Address:</strong> {{ address }}</p>
                                   <!-- Map + GMAPS link -->
                                   <div id="company-map"
                                       class="map-container mt-3"
-                                      data-address="{{ company.location.street }} {{ company.location.house_number }}, {{ company.location.postal_code }} {{ company.location.city }}, {{ company.location.country }}">
+                                      data-address="{{ address }}">
                                   </div>
 
                                   <div class="mt-2">
                                     <a class="btn btn-light"
                                       target="_blank"
-                                      href="https://www.google.com/maps/search/?api=1&query={{ (company.location.street ~ ' ' ~ company.location.house_number ~ ', ' ~ company.location.postal_code ~ ' ' ~ company.location.city ~ ', ' ~ company.location.country)|replace(' ', '+') }}">
+                                      href="https://www.google.com/maps/search/?api=1&query={{ address|urlencode }}">
                                       Open in Google Maps
                                     </a>
                                   </div>
@@ -142,6 +159,7 @@
                               </div>
                             </div>
                           </div>
+
 
                         </div>
                       </div>
@@ -247,5 +265,63 @@
   </div><!-- /container -->
 </div><!-- /category-post -->
 
+</div>
+
+{% if locked %}
+  <div class="locked-overlay">
+    <div class="locked-card">
+      <h4 class="mb-2">Login Required</h4>
+      <p class="mb-3">Please log in to view full company details.</p>
+      <a class="btn btn-dark w-100"
+         href="{{ url_for('main.login', next=login_next or request.full_path) }}">
+        Go to Login
+      </a>
+    </div>
+  </div>
+{% endif %}
+
 {% endblock %}
 
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const el = document.getElementById('company-map');
+  if (!el) return;
+
+  const address = (el.getAttribute('data-address') || '').trim();
+  if (!address) {
+    el.innerHTML = '<div class="p-3">No address available for map.</div>';
+    return;
+  }
+
+  const url = 'https://nominatim.openstreetmap.org/search'
+            + '?format=json'
+            + '&limit=1'
+            + '&q=' + encodeURIComponent(address);
+
+  fetch(url, { headers: { 'Accept': 'application/json' } })
+    .then(r => r.json())
+    .then(results => {
+      if (!Array.isArray(results) || results.length === 0) {
+        el.innerHTML = '<div class="p-3">Map unavailable for this address.</div>';
+        return;
+      }
+
+      const { lat, lon } = results[0];
+      const map = L.map('company-map', { scrollWheelZoom: false }).setView([lat, lon], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      L.marker([lat, lon]).addTo(map).bindPopup(address).openPopup();
+    })
+    .catch(() => {
+      el.innerHTML = '<div class="p-3">Map unavailable right now.</div>';
+    });
+})();
+</script>
+
+{% endblock %}
+ 
