@@ -29,3 +29,9 @@ def fetch_companies(term: str, page: int):
         print(f"API error: {e}")
         return []
 
+def get_company_data(fnr):
+    res = requests.get(f"http://127.0.0.1:8000/view/{fnr}")
+    if res.status_code != 200:
+        return []
+    res.raise_for_status()
+    return response_to_data(res)
