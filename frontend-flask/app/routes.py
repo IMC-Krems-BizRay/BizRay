@@ -22,12 +22,17 @@ def login():
             session.permanent = False
             session["user_id"] = user.id
             flash("Login successful!", "success")
+
+            next_url = request.form.get("next") or request.args.get("next")
+            if next_url and next_url.startswith("/"):
+                return redirect(next_url)
             return redirect(url_for("main.index"))
-        else:
-            flash("Login failed. Check your email and password.", "danger")
-            return redirect(url_for("main.login"))
+
+        flash("Login failed. Check your email and password.", "danger")
+        return redirect(url_for("main.login"))
 
     return render_template("login.html", page="login", logged_in=session.get("logged_in"))
+
 
 @main.route("/logout")
 def logout():
