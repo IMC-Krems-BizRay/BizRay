@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 from .client import create_client
 import datetime
-
+from charset_normalizer import from_bytes
 
 #########################LEVEL 1#################################################################
 def company_info(fnr: str):
@@ -158,13 +158,11 @@ def get_xml_data(id):
 
     res = client.service.URKUNDE(**suche_params)
 
+    detection = from_bytes(res['DOKUMENT']['CONTENT']).best()
+    if detection is None:
+        raise ValueError("Could not detect encoding")
 
-
-    #there may be more encodings that we're not aware of yet
-    try:
-        return res['DOKUMENT']['CONTENT'].decode('utf-8')
-    except UnicodeDecodeError:
-        return res['DOKUMENT']['CONTENT'].decode('ISO-8859-1')
+    return str(detection)
 
 
 
