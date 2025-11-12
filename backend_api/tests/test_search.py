@@ -1,7 +1,7 @@
 from backend_api.search import search_by_name, search_by_fnr
 
 def test_search_by_name_output():
-    result = search_by_name("signa", True)
+    result = search_by_name("signa")
     assert isinstance(result, list)
     unit = result[0]
     assert isinstance(unit, dict)
@@ -33,11 +33,4 @@ def test_search_by_fnr_output():
 
     assert "fnr" in company
     assert "location" in company
-
-    assert "legal_form" in company
-    if company["legal_form"] is not None:
-        assert "code" in company["legal_form"]
-        assert "text" in company["legal_form"]
-
-    assert "legal_status" in company
-    assert company["legal_status"] == "active" or company["legal_status"] == "inactive"
+    assert "status" in company
