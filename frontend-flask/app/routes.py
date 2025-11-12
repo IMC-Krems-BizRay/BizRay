@@ -138,13 +138,6 @@ def view_company(fnr):
     else:
         abort(500, description="Unexpected data shape from get_company_data")
 
-    # normalize address (street sometimes a list)
-    loc = company.get("location", {})
-    street = loc.get("street")
-    if isinstance(street, list):
-        loc["street"] = " ".join([s for s in street if s])
-    company["location"] = loc
-
     return render_template(
         "company_view.html",
         locked=False,

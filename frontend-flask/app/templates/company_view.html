@@ -124,14 +124,6 @@
                             <div class="description">
                               <div class="row">
                                 <div class="col-lg-12">
-                                  {# --- Normalize and format address --- #}
-                                  {% set raw_street = company.location.street %}
-                                  {% if raw_street is sequence and (raw_street is not string) %}
-                                    {% set street = raw_street | select | join(' ') %}
-                                  {% else %}
-                                    {% set street = raw_street %}
-                                  {% endif %}
-
                                   {# Convert AUT -> Austria etc. for Nominatim reliability #}
                                   {% set c3map = {
                                     'AUT':'Austria',
@@ -146,7 +138,7 @@
 
                                   {# Create well-formatted comma-separated address string #}
                                   {% set address = (
-                                    (street ~ ' ' ~ company.location.house_number)|trim ~ ', ' ~
+                                    (company.location.street ~ ' ' ~ company.location.house_number)|trim ~ ', ' ~
                                     (company.location.postal_code ~ ' ' ~ company.location.city)|trim ~ ', ' ~
                                     country_name
                                   ) | trim %}
