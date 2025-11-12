@@ -11,13 +11,14 @@
 <style>
   .map-container {
     width: 100%;
-    height: 320px;      /* adjust if you want taller */
+    height: 320px;          /* must have a height */
     border-radius: 12px;
     overflow: hidden;
     background: #f3f4f6;
   }
 </style>
 {% endblock %}
+
 <!-- Hero heading (same component used by category.html) -->
 <div class="page-heading">
   <div class="container">
@@ -118,12 +119,12 @@
                   <li>
                     <div>
                       <div class="thumb">
-                        <div class="row" style="margin-top:35px ;">
+                        <div class="row" style="margin-top:35px;">
                           <div class="col-lg-12">
                             <div class="description">
                               <div class="row">
                                 <div class="col-lg-12">
-                                  {# --- Normalize the address --- #}
+                                  {# --- Normalize and format address --- #}
                                   {% set raw_street = company.location.street %}
                                   {% if raw_street is sequence and (raw_street is not string) %}
                                     {% set street = raw_street | select | join(' ') %}
@@ -131,23 +132,31 @@
                                     {% set street = raw_street %}
                                   {% endif %}
 
-                                  {% set parts = [
-                                    street,
-                                    company.location.house_number,
-                                    company.location.postal_code,
-                                    company.location.city,
-                                    company.location.country
-                                  ] %}
-                                  {% set address = parts | select | join(' ') %}
+                                  {# Convert AUT -> Austria etc. for Nominatim reliability #}
+                                  {% set c3map = {
+                                    'AUT':'Austria',
+                                    'DEU':'Germany',
+                                    'CHE':'Switzerland',
+                                    'ITA':'Italy',
+                                    'SVK':'Slovakia',
+                                    'HUN':'Hungary',
+                                    'CZE':'Czechia'
+                                  } %}
+                                  {% set country_name = c3map.get(company.location.country, company.location.country) %}
+
+                                  {# Create well-formatted comma-separated address string #}
+                                  {% set address = (
+                                    (street ~ ' ' ~ company.location.house_number)|trim ~ ', ' ~
+                                    (company.location.postal_code ~ ' ' ~ company.location.city)|trim ~ ', ' ~
+                                    country_name
+                                  ) | trim %}
 
                                   {# --- Display details --- #}
                                   <p><strong>Address:</strong> {{ address }}</p>
-                                  <!-- Map + GMAPS link -->
-                                  <div id="company-map"
-                                      class="map-container mt-3"
-                                      data-address="{{ address }}">
-                                  </div>
 
+                                  <!-- Interactive Map -->
+
+                                  <!-- Google Maps Redirect -->
                                   <div class="mt-2">
                                     <a class="btn btn-light"
                                       target="_blank"
@@ -159,13 +168,11 @@
                               </div>
                             </div>
                           </div>
-
-
                         </div>
                       </div>
                     </div>
-
                   </li>
+
 
                   <!-- Management -->
                   <li>
@@ -282,46 +289,3 @@
 
 {% endblock %}
 
-{% block extra_scripts %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-(function () {
-  const el = document.getElementById('company-map');
-  if (!el) return;
-
-  const address = (el.getAttribute('data-address') || '').trim();
-  if (!address) {
-    el.innerHTML = '<div class="p-3">No address available for map.</div>';
-    return;
-  }
-
-  const url = 'https://nominatim.openstreetmap.org/search'
-            + '?format=json'
-            + '&limit=1'
-            + '&q=' + encodeURIComponent(address);
-
-  fetch(url, { headers: { 'Accept': 'application/json' } })
-    .then(r => r.json())
-    .then(results => {
-      if (!Array.isArray(results) || results.length === 0) {
-        el.innerHTML = '<div class="p-3">Map unavailable for this address.</div>';
-        return;
-      }
-
-      const { lat, lon } = results[0];
-      const map = L.map('company-map', { scrollWheelZoom: false }).setView([lat, lon], 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
-      }).addTo(map);
-
-      L.marker([lat, lon]).addTo(map).bindPopup(address).openPopup();
-    })
-    .catch(() => {
-      el.innerHTML = '<div class="p-3">Map unavailable right now.</div>';
-    });
-})();
-</script>
-
-{% endblock %}
- 
