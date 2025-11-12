@@ -40,7 +40,7 @@ def extract_location_info(info):
     address = info.FIRMA.FI_DKZ03[0]
 
     data = {
-        'street': address.STELLE,
+        'street': address.STRASSE,
         'house_number': address.HAUSNUMMER,
         'postal_code': address.PLZ,
         'city': address.ORT,
