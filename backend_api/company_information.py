@@ -21,12 +21,17 @@ def company_info(fnr: str):
     return result
 
 def extract_company_data(info):
+    if len(info.FIRMA.FI_DKZ02) > 0:
+        company_name = info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0]
+    else:
+        company_name = 'NO DATA'
+
     data = {
         'basic_info': {
-            'company_name': info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0],
-            'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT,
-            'company_number': info.FNR,
-            'european_id': info.EUID[0].EUID,
+            'company_name': company_name,
+            'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT if len(info.FIRMA.FI_DKZ07) > 0 else "NO DATA",
+            'company_number': info.FNR if hasattr(info.FIRMA, 'FNR') else 'NO DATA',
+            'european_id': info.EUID[0].EUID if hasattr(info.EUID, 'EUID') else 'NO DATA',
         },
         'location': extract_location_info(info),
         'management': extract_management_info(info),
@@ -37,7 +42,10 @@ def extract_company_data(info):
     return data
 
 def extract_location_info(info):
-    address = info.FIRMA.FI_DKZ03[0]
+    if len(info.FIRMA.FI_DKZ03) > 0:
+        address = info.FIRMA.FI_DKZ03[0]
+    else:
+        return "NO DATA"
 
     data = {
         'street': address.STRASSE,
@@ -50,6 +58,9 @@ def extract_location_info(info):
     return data
 
 def extract_management_info(info):
+    if len(info.FUN)  < 1:
+        return "NO DATA"
+
 
 
     people = []
@@ -58,7 +69,7 @@ def extract_management_info(info):
 
         pnr = i.PNR
         personal_info = next(j for j in info.PER if j.PNR == pnr) #easier
-        print(personal_info)
+        #print(personal_info)
 
         if personal_info:
             data = {
@@ -74,6 +85,9 @@ def extract_management_info(info):
     return people
 
 def extract_company_history(info):
+    if len(info.VOLLZ) < 1:
+        return "NO DATA"
+
     history = []
 
     for event in info.VOLLZ:
@@ -103,7 +117,10 @@ def get_document_data(fnr):
 
     doc_ids = [i.KEY for i in res if 'XML' in i.KEY]
     if not doc_ids:
-        return {"error": "No XML documents found"}
+        return {
+        'director_name': "NO XML DATA",
+        'total_assets': "NO XML DATA"
+    }
 
     xml_content = get_xml_data(doc_ids[0]) #for now
 
@@ -114,10 +131,10 @@ def get_document_data(fnr):
 
     ns = {'ns0': 'https://finanzonline.bmf.gv.at/bilanz'}
 
-    print("All elements in root:")
-    for e in root.iter():
-        print(e.tag)
-    print('----------------------------------------------------------------')
+   # print("All elements in root:")
+    #for e in root.iter():
+   #     print(e.tag)
+  #  print('----------------------------------------------------------------')
 
 
     data = {
@@ -143,9 +160,11 @@ def get_xml_data(id):
 
 
 
-
-
-    return res['DOKUMENT']['CONTENT'].decode('utf-8') #its in bytes so it needs to be decoded
+    #there may be more encodings that we're not aware of yet
+    try:
+        return res['DOKUMENT']['CONTENT'].decode('utf-8')
+    except UnicodeDecodeError:
+        return res['DOKUMENT']['CONTENT'].decode('ISO-8859-1')
 
 
 
