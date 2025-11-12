@@ -30,8 +30,8 @@ def extract_company_data(info):
         'basic_info': {
             'company_name': company_name,
             'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT if len(info.FIRMA.FI_DKZ07) > 0 else "NO DATA",
-            'company_number': info.FNR if hasattr(info.FIRMA, 'FNR') else 'NO DATA',
-            'european_id': info.EUID[0].EUID if hasattr(info.EUID, 'EUID') else 'NO DATA',
+            'company_number': info.FNR,
+            'european_id': info.EUID[0].EUID if len(info.EUID) > 0 else "NO DATA",
         },
         'location': extract_location_info(info),
         'management': extract_management_info(info),
@@ -42,10 +42,10 @@ def extract_company_data(info):
     return data
 
 def extract_location_info(info):
-    if len(info.FIRMA.FI_DKZ03) > 0:
-        address = info.FIRMA.FI_DKZ03[0]
-    else:
+    if len(info.FIRMA.FI_DKZ03) < 1:
         return "NO DATA"
+
+    address = info.FIRMA.FI_DKZ03[0]
 
     data = {
         'street': address.STRASSE,
