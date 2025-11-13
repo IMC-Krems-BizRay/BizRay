@@ -69,10 +69,10 @@ def extract_company_data(info):
 
     data = {
         'basic_info': {
-            'company_name': info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0] if len(info.FIRMA.FI_DKZ02) > 0 else "NO DATA",
-            'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT if len(info.FIRMA.FI_DKZ07) > 0 else "NO DATA",
+            'company_name': info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0] if len(info.FIRMA.FI_DKZ02) > 0 else None,
+            'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT if len(info.FIRMA.FI_DKZ07) > 0 else None,
             'company_number': info.FNR,
-            'european_id': info.EUID[0].EUID if len(info.EUID) > 0 else "NO DATA",
+            'european_id': info.EUID[0].EUID if len(info.EUID) > 0 else None,
         },
         'location': extract_location_info(info),
         'management': extract_management_info(info),
@@ -154,8 +154,8 @@ def get_document_data(fnr):
     doc_ids = [i.KEY for i in res if 'XML' in i.KEY]
     if not doc_ids:
         return {
-            'director_name': "NO XML DATA",
-            'total_assets': "NO XML DATA"
+            'director_name': None,
+            'total_assets': None
         }
 
     xml_content = get_xml_data(doc_ids[0]) #for now
