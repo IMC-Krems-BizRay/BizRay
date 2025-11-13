@@ -81,7 +81,7 @@ def extract_company_data(info):
 
 def extract_location_info(info):
     if len(info.FIRMA.FI_DKZ03) < 1:
-        return "NO DATA"
+        return None
 
     address = info.FIRMA.FI_DKZ03[0]
 
@@ -96,8 +96,8 @@ def extract_location_info(info):
     return data
 
 def extract_management_info(info):
-    if len(info.FUN)  < 1:
-        return "NO DATA"
+    if len(info.FUN) < 1:
+        return []
 
     people = []
     for i in info.FUN:
@@ -119,7 +119,7 @@ def extract_management_info(info):
 
 def extract_company_history(info):
     if len(info.VOLLZ) < 1:
-        return "NO DATA"
+        return []
 
     history = []
 
