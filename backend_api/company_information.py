@@ -1,10 +1,16 @@
-import base64
 import xml.etree.ElementTree as ET
-from xml.dom import minidom
+# from xml.dom import minidom
+# import base64
 
 from .client import create_client
 import datetime
 from charset_normalizer import from_bytes
+
+def json_date(date):
+    """
+    Convert YYYYMMDD to YYYY-MM-DD
+    """
+    return f"{date[:4]}-{date[4:6]}-{date[6:]}"
 
 #########################LEVEL 1#################################################################
 def company_info(fnr: str):
@@ -110,11 +116,11 @@ def extract_management_info(info):
 
         if personal_info:
             data = {
-                'PNR': pnr, #not globally unique
+                'pnr': pnr, #not globally unique
                 'name': personal_info.PE_DKZ02[0].NAME_FORMATIERT[0],
-                'DOB': personal_info.PE_DKZ02[0].GEBURTSDATUM,
+                'date_of_birth': json_date(personal_info.PE_DKZ02[0].GEBURTSDATUM),
                 'role': i.FKENTEXT,
-                'appointed_on': i.FU_DKZ10[0].DATVON,
+                'appointed_on': json_date(i.FU_DKZ10[0].DATVON),
             }
             people.append(data)
 
@@ -140,6 +146,11 @@ def extract_company_history(info):
 
 ######################LEVEL 2##########################################################
 
+def get_text_or_none(element: ET.Element | None) -> str | None:
+    if element is None:
+        return None
+
+    return element.text
 
 def get_document_data(fnr):
     client = create_client()
@@ -153,10 +164,7 @@ def get_document_data(fnr):
 
     doc_ids = [i.KEY for i in res if 'XML' in i.KEY]
     if not doc_ids:
-        return {
-            'director_name': None,
-            'total_assets': None
-        }
+        return None
 
     xml_content = get_xml_data(doc_ids[0]) #for now
     root = ET.fromstring(xml_content)
@@ -174,7 +182,7 @@ def get_document_data(fnr):
     fiscal_year = general.find('./ns0:GJ', ns)
     director = general.find('./ns0:UNTER', ns)
 
-    print(balance.find(".//ns0:HGB_224_2/ns0:POSTENZEILE/ns0:BETRAG", ns).text)
+    # print(balance.find(".//ns0:HGB_224_2/ns0:POSTENZEILE/ns0:BETRAG", ns).text)
     def search_balance(term):
         node = balance.find(f".//ns0:{term}/ns0:POSTENZEILE/ns0:BETRAG", ns)
         if node is None:
@@ -204,8 +212,11 @@ def get_document_data(fnr):
             'end': fiscal_year.find('./ns0:ENDE', ns).text,
         },
         'currency': general.find('./ns0:WAEHRUNG', ns).text,
-        'director': director.find('./ns0:V_NAME', ns).text + " " + director.find('./ns0:Z_NAME', ns).text,
-
+        'director': {
+            'name': director.find('./ns0:V_NAME', ns).text + " " + director.find('./ns0:Z_NAME', ns).text,
+            'date_of_birth': get_text_or_none(director.find('./ns0:GEB_DAT', ns)),
+            'title': get_text_or_none(director.find('./ns0:TITEL', ns)),
+        },
         'fixed_assets': search_balance("HGB_224_2_A"),
         'intangible_assets': search_balance("HGB_224_2_A_I"),
         'tangible_assets': search_balance("HGB_224_2_A_II"),
