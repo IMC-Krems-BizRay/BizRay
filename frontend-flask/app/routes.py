@@ -106,9 +106,11 @@ def view_company(fnr):
     if not session.get("logged_in"):
         company_stub = {
             "basic_info": {"company_name": "Login required"},
-            "location": {"street": "", "house_number": "", "postal_code": "", "city": "", "country": ""},
+            "location": None,
             "management": [],
-            "financial": {"director_name": "", "total_assets": ""},
+            # The backend can send None here if documents are not found, so the case of this
+            # being None should be handled and consequently it will be possible to just put None here
+            "financial": {"director": {"name": ""}, "total_assets": 0.0},
             "history": []
         }
         return render_template(
@@ -121,22 +123,26 @@ def view_company(fnr):
         )
 
     # Logged in: fetch and normalize real data
-    result = get_company_data(fnr)
+    # result = get_company_data(fnr)
+
+    # This literally cannot happen
 
     # normalize to a single dict
-    if isinstance(result, list):
-        if not result:
-            abort(404, description="Company not found")
-        company = result[0]
-    elif isinstance(result, dict):
-        if "Results" in result and isinstance(result["Results"], list):
-            if not result["Results"]:
-                abort(404, description="Company not found")
-            company = result["Results"][0]
-        else:
-            company = result
-    else:
-        abort(500, description="Unexpected data shape from get_company_data")
+    # if isinstance(result, list):
+    #     if not result:
+    #         abort(404, description="Company not found")
+    #     company = result[0]
+    # elif isinstance(result, dict):
+    #     if "Results" in result and isinstance(result["Results"], list):
+    #         if not result["Results"]:
+    #             abort(404, description="Company not found")
+    #         company = result["Results"][0]
+    #     else:
+    #         company = result
+    # else:
+    #     abort(500, description="Unexpected data shape from get_company_data")
+
+    company = get_company_data(fnr)
 
     return render_template(
         "company_view.html",
