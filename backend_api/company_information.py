@@ -1,4 +1,7 @@
+import base64
 import xml.etree.ElementTree as ET
+from xml.dom import minidom
+
 from .client import create_client
 import datetime
 from charset_normalizer import from_bytes
@@ -156,23 +159,78 @@ def get_document_data(fnr):
         }
 
     xml_content = get_xml_data(doc_ids[0]) #for now
-
-
-    #print(type(xml_content))
     root = ET.fromstring(xml_content)
-
 
     ns = {'ns0': 'https://finanzonline.bmf.gv.at/bilanz'}
 
-   # print("All elements in root:")
-    #for e in root.iter():
-   #     print(e.tag)
-  #  print('----------------------------------------------------------------')
 
+
+    date_info = root.find('.//ns0:INFO_DATEN', ns)
+    other_info = root.find('.//ns0:BILANZ_GLIEDERUNG', ns)
+
+    general = other_info.find('./ns0:ALLG_JUSTIZ', ns)
+    balance = other_info.find('./ns0:BILANZ', ns)
+
+    fiscal_year = general.find('./ns0:GJ', ns)
+    director = general.find('./ns0:UNTER', ns)
+
+    print(balance.find(".//ns0:HGB_224_2/ns0:POSTENZEILE/ns0:BETRAG", ns).text)
+    def search_balance(term):
+        node = balance.find(f".//ns0:{term}/ns0:POSTENZEILE/ns0:BETRAG", ns)
+        if node is None:
+            return None
+
+        return float(node.text)
+
+    # pdf files
+    # notes = other_info.find('./ns0:VERMERKE', ns)
+    # for elem in note.iter():
+    #     tag_name = elem.tag[elem.tag.index('}') + 1:]
+    #     if tag_name == "VERMERKE":
+    #         continue
+    #
+    #     decoded = base64.b64decode(elem.text)
+    #
+    #     with open(tag_name + ".pdf", "wb") as f:
+    #         f.write(decoded)
 
     data = {
-        'director_name': root.find('.//ns0:UNTER/ns0:V_NAME', ns).text + " " + root.find('.//ns0:UNTER/ns0:Z_NAME', ns).text,
-        'total_assets': root.find('.//ns0:HGB_224_2/ns0:POSTENZEILE/ns0:BETRAG', ns).text,
+        'submission': {
+            'date': date_info.find('./ns0:DATUM_ERSTELLUNG', ns).text,
+            'time': date_info.find('./ns0:UHRZEIT_ERSTELLUNG', ns).text,
+        },
+        'fiscal_year': {
+            'start': fiscal_year.find('./ns0:BEGINN', ns).text,
+            'end': fiscal_year.find('./ns0:ENDE', ns).text,
+        },
+        'currency': general.find('./ns0:WAEHRUNG', ns).text,
+        'director': director.find('./ns0:V_NAME', ns).text + " " + director.find('./ns0:Z_NAME', ns).text,
+
+        'fixed_assets': search_balance("HGB_224_2_A"),
+        'intangible_assets': search_balance("HGB_224_2_A_I"),
+        'tangible_assets': search_balance("HGB_224_2_A_II"),
+        'financial_assets': search_balance("HGB_224_2_A_III"),
+        'current_assets': search_balance("HGB_224_2_B"),
+        'inventories': search_balance("HGB_224_2_B_I"),
+        'receivables': search_balance("HGB_224_2_B_II"),
+        'securities': search_balance("HGB_224_2_B_III"),
+        'cash_and_bank_balances': search_balance("HGB_224_2_B_IV"),
+        'prepaid_expenses': search_balance("HGB_224_2_C"),
+        'deferred_tax_assets': search_balance("HGB_224_2_D"),
+        'total_assets': search_balance("HGB_224_2"),
+
+        'equity': search_balance("HGB_224_3_A"),
+        'share_capital': search_balance("HGB_229_1_A_I"),
+        'share_capital_subitem': search_balance("HGB_224_3_A_I_a"),
+        'share_capital_subitem_detail': search_balance("HGB_229_1_A_I_a"),
+        'capital_reserves': search_balance("HGB_224_3_A_II"),
+        'revenue_reserves': search_balance("HGB_224_3_A_III"),
+        'retained_earnings': search_balance("HGB_224_3_A_IV"),
+        'retained_earnings_subitem': search_balance("HGB_224_3_A_IV_x"),
+        'liabilities': search_balance("HGB_224_3_C"),
+        'deferred_income': search_balance("HGB_224_3_D"),
+        'deferred_tax_liabilities': search_balance("HGB_224_3_E"),
+        'total_liabilities': search_balance("HGB_224_3")
     }
 
     return data
