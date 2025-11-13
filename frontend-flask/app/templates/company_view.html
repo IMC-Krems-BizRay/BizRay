@@ -115,9 +115,7 @@
                             <div class="description">
                               <div class="row">
                                 <div class="col-lg-12">
-                                  {% if company.location is None %}
-                                     <p><strong>Address:</strong> Unknown</p>
-                                  {% elif %}
+                                  {% if company.location %}
                                   {# Convert AUT -> Austria etc. for Nominatim reliability #}
                                   {% set c3map = {
                                     'AUT':'Austria',
@@ -158,6 +156,8 @@
                                       Open in Google Maps
                                     </a>
                                   </div>
+                                  {% else %}
+                                       <p><strong>Address:</strong> Unknown</p>
                                   {% endif %}
                                 </div>
                               </div>
