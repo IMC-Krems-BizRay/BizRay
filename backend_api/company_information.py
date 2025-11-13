@@ -30,7 +30,13 @@ def extract_company_data(info):
             company_number: str,
             european_id: str
         },
-        location: str,
+        location: {
+            street: str,
+            house_number: str,
+            postal_code: str,
+            city: str,
+            country:  str
+        },
         management: [
             {
                 PNR: str,
@@ -65,7 +71,6 @@ def extract_company_data(info):
             'company_number': info.FNR,
             'european_id': info.EUID[0].EUID if len(info.EUID) > 0 else "NO DATA",
         },
-        # move location in basic_info since it's just a string?
         'location': extract_location_info(info),
         'management': extract_management_info(info),
         'financial': get_document_data(info.FNR),
@@ -176,7 +181,6 @@ def get_document_data(fnr):
 
 
 def get_xml_data(id):
-
     client = create_client()
 
     suche_params = {
