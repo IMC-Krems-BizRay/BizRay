@@ -36,11 +36,11 @@ def extract_company_data(info):
     {
         basic_info: {
             company_name: str,
-            legal_form: str,
+            legal_form: null | str,
             company_number: str,
-            european_id: str
+            european_id: null | str
         },
-        location: {
+        location: null | {
             street: str,
             house_number: str,
             postal_code: str,
@@ -71,7 +71,7 @@ def extract_company_data(info):
                 director: {
                     name: str,
                     date_of_birth: str(date),
-                    title: str
+                    title: null | str
                 },
                 fixed_assets: float,
                 intangible_assets: float,
