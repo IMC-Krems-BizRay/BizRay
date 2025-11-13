@@ -21,18 +21,51 @@ def company_info(fnr: str):
     return result
 
 def extract_company_data(info):
-    if len(info.FIRMA.FI_DKZ02) > 0:
-        company_name = info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0]
-    else:
-        company_name = 'NO DATA'
+    """
+    Result has the following structure:
+    {
+        basic_info: {
+            company_name: str,
+            legal_form: str,
+            company_number: str,
+            european_id: str
+        },
+        location: str,
+        management: [
+            {
+                PNR: str,
+                name: str,
+                DOB: str,
+                role: str,
+                appointed_on: str
+            },
+            ...
+        ],
+        financial: {
+            director_name: str,
+            total_assets: str
+        },
+        history: [
+            {
+                event_number: str,
+                event_date: str,
+                event: str,
+                court: str,
+                filed_date: str
+            },
+            ...
+        ]
+    }
+    """
 
     data = {
         'basic_info': {
-            'company_name': company_name,
+            'company_name': info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0] if len(info.FIRMA.FI_DKZ02) > 0 else "NO DATA",
             'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT if len(info.FIRMA.FI_DKZ07) > 0 else "NO DATA",
             'company_number': info.FNR,
             'european_id': info.EUID[0].EUID if len(info.EUID) > 0 else "NO DATA",
         },
+        # move location in basic_info since it's just a string?
         'location': extract_location_info(info),
         'management': extract_management_info(info),
         'financial': get_document_data(info.FNR),
@@ -61,12 +94,8 @@ def extract_management_info(info):
     if len(info.FUN)  < 1:
         return "NO DATA"
 
-
-
     people = []
     for i in info.FUN:
-
-
         pnr = i.PNR
         personal_info = next(j for j in info.PER if j.PNR == pnr) #easier
         #print(personal_info)
@@ -80,7 +109,6 @@ def extract_management_info(info):
                 'appointed_on': i.FU_DKZ10[0].DATVON,
             }
             people.append(data)
-
 
     return people
 
@@ -118,9 +146,9 @@ def get_document_data(fnr):
     doc_ids = [i.KEY for i in res if 'XML' in i.KEY]
     if not doc_ids:
         return {
-        'director_name': "NO XML DATA",
-        'total_assets': "NO XML DATA"
-    }
+            'director_name': "NO XML DATA",
+            'total_assets': "NO XML DATA"
+        }
 
     xml_content = get_xml_data(doc_ids[0]) #for now
 
