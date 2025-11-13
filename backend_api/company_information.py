@@ -1,3 +1,4 @@
+import re
 import xml.etree.ElementTree as ET
 # from xml.dom import minidom
 # import base64
@@ -44,29 +45,68 @@ def extract_company_data(info):
             house_number: str,
             postal_code: str,
             city: str,
-            country:  str
+            country: str
         },
         management: [
             {
-                PNR: str,
+                pnr: str,
                 name: str,
-                DOB: str,
+                date_of_birth: str(date),
                 role: str,
-                appointed_on: str
+                appointed_on: str(date)
             },
             ...
         ],
-        financial: {
-            director_name: str,
-            total_assets: str
-        },
+        financial: [
+            {
+                submission: {
+                    date: str(date),
+                    time: str(time)
+                },
+                fiscal_year: {
+                    start: str(date),
+                    end: str(date)
+                },
+                currency: str,
+                director: {
+                    name: str,
+                    date_of_birth: str(date),
+                    title: str
+                },
+                fixed_assets: float,
+                intangible_assets: float,
+                tangible_assets: float,
+                financial_assets: float,
+                current_assets: float,
+                inventories: float,
+                receivables: float,
+                securities: float,
+                cash_and_bank_balances: float,
+                prepaid_expenses: float,
+                deferred_tax_assets: float,
+                total_assets: float,
+                equity: float,
+                share_capital: float,
+                share_capital_subitem: float,
+                share_capital_subitem_detail: float,
+                capital_reserves: float,
+                revenue_reserves: float,
+                retained_earnings: float,
+                retained_earnings_subitem: float,
+                liabilities: float,
+                deferred_income: float,
+                deferred_tax_liabilities: float,
+                total_liabilities: float
+            },
+            ...
+        ],
         history: [
             {
                 event_number: str,
                 event_date: str,
                 event: str,
                 court: str,
-                filed_date: str
+                filed_date: str(date)
             },
             ...
         ]
@@ -82,7 +122,7 @@ def extract_company_data(info):
         },
         'location': extract_location_info(info),
         'management': extract_management_info(info),
-        'financial': get_document_data(info.FNR),
+        'financial': get_financial_data(info.FNR),
         'history': extract_company_history(info),
     }
 
@@ -143,7 +183,6 @@ def extract_company_history(info):
 
     return history
 
-
 ######################LEVEL 2##########################################################
 
 def get_text_or_none(element: ET.Element | None) -> str | None:
@@ -152,26 +191,27 @@ def get_text_or_none(element: ET.Element | None) -> str | None:
 
     return element.text
 
-def get_document_data(fnr):
+def get_xml_data(id):
     client = create_client()
 
     suche_params = {
-        "FNR": fnr,
-        "AZ": ""
+        "KEY": id,
+        #"SICHTAG": datetime.datetime.today()
     }
-    res = client.service.SUCHEURKUNDE(**suche_params).ERGEBNIS
 
+    res = client.service.URKUNDE(**suche_params)
 
-    doc_ids = [i.KEY for i in res if 'XML' in i.KEY]
-    if not doc_ids:
-        return None
+    detection = from_bytes(res['DOKUMENT']['CONTENT']).best()
+    if detection is None:
+        raise ValueError("Could not detect encoding")
 
-    xml_content = get_xml_data(doc_ids[0]) #for now
+    return str(detection)
+
+ns = {'ns0': 'https://finanzonline.bmf.gv.at/bilanz'}
+def get_document_data(id):
+    global ns
+    xml_content = get_xml_data(id)
     root = ET.fromstring(xml_content)
-
-    ns = {'ns0': 'https://finanzonline.bmf.gv.at/bilanz'}
-
-
 
     date_info = root.find('.//ns0:INFO_DATEN', ns)
     other_info = root.find('.//ns0:BILANZ_GLIEDERUNG', ns)
@@ -246,25 +286,47 @@ def get_document_data(fnr):
 
     return data
 
-
-
-
-def get_xml_data(id):
+def get_financial_data(fnr):
     client = create_client()
 
     suche_params = {
-        "KEY": id,
-        #"SICHTAG": datetime.datetime.today()
+        "FNR": fnr,
+        "AZ": ""
     }
+    results = client.service.SUCHEURKUNDE(**suche_params).ERGEBNIS
 
-    res = client.service.URKUNDE(**suche_params)
+    # for some reason the content of the documents repeats
+    #  [
+    #     '435836_5690342302057_000___000_30_30137347_XML', 1
+    #     '435836_5690342302057_000___000_30_30137348_XML', 1
+    #     '435836_5690342302057_000___000_30_30137350_XML', 1
+    #     '435836_5690342400412_000___000_30_32334332_XML', 2
+    #     '435836_5690342400412_000___000_30_32334333_XML', 2
+    #     '435836_5690342400412_000___000_30_32334335_XML', 2
+    #     '435836_5690682501107_000___000_30_35209228_XML', 3
+    #     '435836_5690682501107_000___000_30_35209229_XML', 3
+    #     '435836_5690682501107_000___000_30_35209230_XML'  3
+    # ]
+    # I would assume the uniqueness depends on the second set of numbers
 
-    detection = from_bytes(res['DOKUMENT']['CONTENT']).best()
-    if detection is None:
-        raise ValueError("Could not detect encoding")
+    pattern = re.compile(r'^[^_]+_([0-9]+)_.*XML')
+    keys = set()
+    doc_ids = []
+    for result in results:
+        match = pattern.fullmatch(result.KEY)
+        if not match:
+            continue
 
-    return str(detection)
+        key = match.group(1)
+        if key in keys:
+            continue
 
+        keys.add(key)
+        doc_ids.append(result.KEY)
+
+    print(doc_ids)
+                                            # limit to 3 last reports
+    return [get_document_data(id) for id in doc_ids[-3:]]
 
 
 ######################LEVEL 3##########################################################

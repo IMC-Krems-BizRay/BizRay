@@ -108,9 +108,7 @@ def view_company(fnr):
             "basic_info": {"company_name": "Login required"},
             "location": None,
             "management": [],
-            # The backend can send None here if documents are not found, so the case of this
-            # being None should be handled and consequently it will be possible to just put None here
-            "financial": {"director": {"name": ""}, "total_assets": 0.0},
+            "financial": [],
             "history": []
         }
         return render_template(
