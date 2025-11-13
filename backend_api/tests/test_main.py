@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from backend_api.main import app
+from config import TEST_COMPANY_NAME, TEST_COMPANY_FNR
 
 client = TestClient(app)
 
@@ -12,8 +13,7 @@ def test_confirm_connection():
 
 
 def test_search_by_name():
-    company_name = "signa"
-    response = client.get(f"/search/{company_name}?page=1")
+    response = client.get(f"/search/{TEST_COMPANY_NAME}?page=1")
     assert response.status_code == 200
     data = response.json()
     assert "result" in data
@@ -25,8 +25,7 @@ def test_search_by_name():
     assert isinstance(result["companies"], list)
 
 def test_search_by_fnr():
-    test_fnr = "583360h"
-    response = client.get(f"/search/{test_fnr}?page=1")
+    response = client.get(f"/search/{TEST_COMPANY_FNR}?page=1")
     assert response.status_code == 200
     data = response.json()
     assert "result" in data
