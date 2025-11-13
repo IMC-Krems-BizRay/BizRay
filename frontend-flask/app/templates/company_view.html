@@ -211,7 +211,7 @@
                               <div class="row">
                                 <div class="col-lg-12">
                                   {% if company.financial | length > 0 %}
-                                    <p><strong>Director:</strong> {{ company.financial[-1].director.name }}</p>
+                                    <p><strong>Director:</strong> {{ company.financial[-1].director_name }}</p>
                                     <p><strong>Total Assets:</strong> {{ company.financial[-1].total_assets }}</p>
                                   {% else %}
                                     Unknown

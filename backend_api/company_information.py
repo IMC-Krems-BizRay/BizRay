@@ -1,6 +1,7 @@
 import re
 import xml.etree.ElementTree as ET
-# from xml.dom import minidom
+from xml.dom import minidom
+
 # import base64
 
 from .client import create_client
@@ -41,8 +42,8 @@ def extract_company_data(info):
             european_id: null | str
         },
         location: null | {
-            street: str,
-            house_number: str,
+            street: null | str,
+            house_number: null | str,
             postal_code: str,
             city: str,
             country: str
@@ -51,7 +52,7 @@ def extract_company_data(info):
             {
                 pnr: str,
                 name: str,
-                date_of_birth: str(date),
+                date_of_birth: null | str(date),
                 role: str,
                 appointed_on: str(date)
             },
@@ -59,20 +60,13 @@ def extract_company_data(info):
         ],
         financial: [
             {
-                submission: {
-                    date: str(date),
-                    time: str(time)
-                },
+                submission_date: str(date),
                 fiscal_year: {
                     start: str(date),
                     end: str(date)
                 },
                 currency: str,
-                director: {
-                    name: str,
-                    date_of_birth: str(date),
-                    title: null | str
-                },
+                director_name: str,
                 fixed_assets: float,
                 intangible_assets: float,
                 tangible_assets: float,
@@ -155,10 +149,16 @@ def extract_management_info(info):
         #print(personal_info)
 
         if personal_info:
+            print(personal_info)
+            date_of_birth = personal_info.PE_DKZ02[0].GEBURTSDATUM
+
+            formatted_name = personal_info.PE_DKZ02[0].NAME_FORMATIERT
+            name = formatted_name[0] if formatted_name is not None else personal_info.PE_DKZ02[0].BEZEICHNUNG[0]
+
             data = {
                 'pnr': pnr, #not globally unique
-                'name': personal_info.PE_DKZ02[0].NAME_FORMATIERT[0],
-                'date_of_birth': json_date(personal_info.PE_DKZ02[0].GEBURTSDATUM),
+                'name': name,
+                'date_of_birth': json_date(date_of_birth) if date_of_birth else None,
                 'role': i.FKENTEXT,
                 'appointed_on': json_date(i.FU_DKZ10[0].DATVON),
             }
@@ -211,18 +211,23 @@ ns = {'ns0': 'https://finanzonline.bmf.gv.at/bilanz'}
 def get_document_data(id):
     global ns
     xml_content = get_xml_data(id)
+
     root = ET.fromstring(xml_content)
+
+    with open(id + ".xml", "w", encoding="utf-8") as f:
+        f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="  "))
 
     date_info = root.find('.//ns0:INFO_DATEN', ns)
     other_info = root.find('.//ns0:BILANZ_GLIEDERUNG', ns)
 
     general = other_info.find('./ns0:ALLG_JUSTIZ', ns)
     balance = other_info.find('./ns0:BILANZ', ns)
+    if balance is None:
+        balance = other_info.find('./ns0:HGB_Form_2', ns)
 
     fiscal_year = general.find('./ns0:GJ', ns)
     director = general.find('./ns0:UNTER', ns)
 
-    # print(balance.find(".//ns0:HGB_224_2/ns0:POSTENZEILE/ns0:BETRAG", ns).text)
     def search_balance(term):
         node = balance.find(f".//ns0:{term}/ns0:POSTENZEILE/ns0:BETRAG", ns)
         if node is None:
@@ -243,20 +248,15 @@ def get_document_data(id):
     #         f.write(decoded)
 
     data = {
-        'submission': {
-            'date': date_info.find('./ns0:DATUM_ERSTELLUNG', ns).text,
-            'time': date_info.find('./ns0:UHRZEIT_ERSTELLUNG', ns).text,
-        },
+        'submission_date': date_info.find('./ns0:DATUM_ERSTELLUNG', ns).text if date_info
+            else director.find('./ns0:DAT_UNT', ns).text,
         'fiscal_year': {
             'start': fiscal_year.find('./ns0:BEGINN', ns).text,
             'end': fiscal_year.find('./ns0:ENDE', ns).text,
         },
         'currency': general.find('./ns0:WAEHRUNG', ns).text,
-        'director': {
-            'name': director.find('./ns0:V_NAME', ns).text + " " + director.find('./ns0:Z_NAME', ns).text,
-            'date_of_birth': get_text_or_none(director.find('./ns0:GEB_DAT', ns)),
-            'title': get_text_or_none(director.find('./ns0:TITEL', ns)),
-        },
+        'director_name': director.find('./ns0:V_NAME', ns).text + " " + director.find('./ns0:Z_NAME', ns).text,
+
         'fixed_assets': search_balance("HGB_224_2_A"),
         'intangible_assets': search_balance("HGB_224_2_A_I"),
         'tangible_assets': search_balance("HGB_224_2_A_II"),
