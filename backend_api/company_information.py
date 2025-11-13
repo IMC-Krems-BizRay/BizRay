@@ -309,7 +309,7 @@ def get_financial_data(fnr):
     # ]
     # I would assume the uniqueness depends on the second set of numbers
 
-    pattern = re.compile(r'^[^_]+_([0-9]+)_.*XML')
+    pattern = re.compile(r'^\d+_(\d+)_.*XML$')
     keys = set()
     doc_ids = []
     for result in results:
