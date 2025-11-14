@@ -70,27 +70,25 @@ def search_by_name(company_name) -> list[dict]:
     }
 
     suche_response = client.service.SUCHEFIRMA(**suche_params)
+    results = suche_response.ERGEBNIS
 
-    ergebnisse = suche_response.ERGEBNIS
-
-    print(f"Found {len(ergebnisse)} companies for '{company_name}'---------------------------------------------------\n\n\n") #for debugging
-    #print(ergebnisse[0])
+    print(f"Found {len(results)} companies for '{company_name}'---------------------------------------------------\n\n\n") #for debugging
+    #print(results[0])
     #print(type(suche_response))
-    results = []
-    for ergebnis in ergebnisse:
-        company_info = { #included this for english translation and in case we decide to remove some fields later
-            "fnr": ergebnis.FNR,
-            "status": "active" if "STATUS" in ergebnis else "inactive",
-            "name": ergebnis.NAME,
-            "location": ergebnis.SITZ,
-            "legal_form": {"code": ergebnis.RECHTSFORM.CODE, "text": ergebnis.RECHTSFORM.TEXT},
-            "legal_status": "active" if "RECHTSEIGENSCHAFT" in ergebnis else "inactive",
-            "responsible_court": {"code": ergebnis.GERICHT.CODE, "text": ergebnis.GERICHT.TEXT}
+    return [
+        {  # included this for english translation and in case we decide to remove some fields later
+            "fnr": result.FNR,
+            # It's either None for active or "gelöscht" for inactive
+            "status": "deleted" if result.STATUS is not None else "active",
+            "name": result.NAME,
+            "location": result.SITZ,
+            # not used for now
+            # "legal_form": {"code": result.RECHTSFORM.CODE, "text": result.RECHTSFORM.TEXT},
+            # "legal_status": "active" if "RECHTSEIGENSCHAFT" in result else "inactive",
+            # "responsible_court": {"code": result.GERICHT.CODE, "text": result.GERICHT.TEXT}
         }
-        results.append(company_info)
-
-
-    return results
+        for result in results
+    ]
 
 def search_by_fnr(company_fnr) -> dict:
     client = create_client()
