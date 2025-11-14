@@ -214,8 +214,8 @@ def get_document_data(id):
 
     root = ET.fromstring(xml_content)
 
-    with open(id + ".xml", "w", encoding="utf-8") as f:
-        f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="  "))
+    # with open(id + ".xml", "w", encoding="utf-8") as f:
+    #     f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="  "))
 
     date_info = root.find('.//ns0:INFO_DATEN', ns)
     other_info = root.find('.//ns0:BILANZ_GLIEDERUNG', ns)
