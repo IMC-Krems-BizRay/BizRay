@@ -189,3 +189,222 @@ header.background-header .main-nav .nav li .main-white-button > a {
     overflow: hidden;
     background: #f3f4f6;
   }
+
+
+
+/*---------------adjustment balance sheet*/
+
+
+.asset-row {
+  display: flex;              /* Label und Wert nebeneinander */
+  justify-content: space-between; /* Label links, Wert rechts */
+  align-items: baseline;      /* gleiche Grundlinie */
+  margin-bottom: 0.5rem;      /* Abstand zwischen den Zeilen */
+}
+
+.asset-label-h5 {
+  font-size: 1.25rem;         /* etwas größer */
+  font-weight: 700;           /* fett */
+  margin: 0;                  /* kein extra Zeilenumbruch */
+  padding-left: 20px;
+}
+
+.asset-label-h6 {
+  font-size: 1rem;            /* kleiner als h5 */
+  font-weight: 500;           /* mittlere Stärke */
+  margin: 0;
+  padding-left: 30px;
+
+}
+
+.asset-label-h7 {
+  font-size: 0.85rem;         /* etwas kleiner als h6 */
+  font-weight: 400;           /* normal statt sehr leicht, 250 ist nicht standard */
+  margin: 0;
+  padding-left: 40px;         /* eingerückt gegenüber h6 */
+  color: #555;                /* optional: etwas abgeschwächt für Unterpunkte */
+}
+
+
+.asset-label-h4 {
+  display: flex;                 /* Label und Wert nebeneinander */
+  justify-content: space-between; /* Label links, Wert rechts */
+  align-items: center;           /* Vertikal zentriert */
+  width: 100%;                  /* Sicherstellen, dass es die volle Breite nutzt */
+  background-color: #f0f0f0;    /* Heller Balken für Unterüberschrift */
+  color: #2a2a2a;               /* Textfarbe */
+  padding: 8px 20px;            /* Etwas Innenabstand */
+  margin: 15px 0 10px 0;        /* Abstand oben und unten */
+  border-radius: 5px;           /* Leicht abgerundet */
+  font-size: 1.75rem;           /* etwas größer, wie vorher */
+  font-weight: 700;             /* fett, wie vorher */
+}
+.asset-value-2 {
+  font-size: 1rem;
+  font-weight: 400;
+  margin-left: 1rem;             /* kleiner Abstand zum Label */
+}
+
+.asset-value {
+  font-size: 1rem;
+  font-weight: 400;
+  margin-left: 1rem;          /* kleiner Abstand zum Label */
+}
+
+.section-header {
+  width: 100%;                  /* Ganze Zeile ausfüllen */
+  background-color: #8d99af;   /* Farbe der Hinterlegung, z. B. hellgrau */
+  color: #2a2a2a;               /* Textfarbe */
+  padding: 10px 20px;           /* Innenabstand, damit Text nicht direkt am Rand klebt */
+  margin: 20px 0;               /* Abstand oben und unten */
+  border-radius: 8px;           /* optional: leicht abgerundete Ecken */
+  font-size: 1.5rem;            /* Schriftgröße */
+  font-weight: 700;             /* Fett */
+}
+
+/* ------------------ Collapse Button Block ------------------ */
+
+/* Container für jeden Button + Collapse */
+.collapse-block {
+  margin-bottom: 15px;
+  border-radius: 15px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  border: none;
+}
+
+/* Button selbst */
+.collapse-block .btn {
+  width: 100%;
+  text-align: left;
+  background: #fff !important;
+  color: #2a2a2a;
+  font-weight: 600;
+  font-size: 18px;
+  padding: 20px 25px;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Button wenn geöffnet */
+.collapse-block .btn[aria-expanded="true"] {
+  color: #4b4bff;
+}
+
+/* Collapse Body */
+.collapse-block .card-body {
+  padding: 20px 25px;
+  background: #fafafa;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #555;
+  border-radius: 0 0 15px 15px;
+}
+
+/* -------------------- financial risk indicators -----*/
+/* -------------------- financial risk indicators -----*/
+/* -------------------- financial risk indicators -----*/
+.financial-ratio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 20px;
+  padding-left: 20px;
+}
+
+.financial-ratio-box {
+  flex: 1 1 calc(33.333% - 1rem); /* 3 Boxen pro Reihe */
+  background-color: #f0f0f0;       /* Heller Hintergrund */
+  border-radius: 8px;
+  padding: 20px 18px 12px 18px;    /* Oben mehr Platz für Bubble */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;          /* Name oben, Wert unten */
+  gap: 8px;
+  position: relative;              /* für absolute Position der Info-Bubble */
+  transition: transform 0.2s ease;
+}
+
+.financial-ratio-box:hover {
+  transform: translateY(-2px);
+  position: relative;
+}
+
+/* Name der Kennzahl */
+.financial-ratio-box h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 20px;
+}
+
+/* Wert der Kennzahl */
+.financial-ratio-box .ratio-value {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #2a2a2a;
+}
+
+
+
+.info-bubble {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 50%;
+  background-color: #4b4bff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+
+}
+
+
+.tooltip-text {
+  display: none;
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  background-color: #2a2a2a;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  white-space: normal;
+  font-size: 0.85rem;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.info-bubble:hover + .tooltip-text {
+  display: block;
+}
+
+/* Responsive Anpassung */
+@media (max-width: 992px) {
+  .financial-ratio-box {
+    flex: 1 1 calc(50% - 1rem); /* 2 Boxen pro Reihe */
+  }
+}
+
+@media (max-width: 576px) {
+  .financial-ratio-box {
+    flex: 1 1 100%; /* 1 Box pro Reihe */
+  }
+  .financial-ratio-box h5 {
+    font-size: 0.95rem;
+  }
+  .financial-ratio-box .ratio-value {
+    font-size: 1.1rem;
+  }
+}
