@@ -142,6 +142,69 @@ def view_company(fnr):
 
     company = get_company_data(fnr)
 
+    for year in company["financial"]:
+        # Default values to avoid division by zero
+        current_assets = year.get('current_assets', 0)
+        liabilities = year.get('liabilities', 0)
+        equity = year.get('equity', 0)
+        total_capital = year.get('total_liabilities', 0)
+
+        # Working Capital
+        year['working_capital'] = {
+            'value': current_assets - liabilities,
+            'description': "Current assets minus current liabilities - indicates short-term financial health.",
+            'is_percent': False
+        }
+
+        # Debt-to-Equity Ratio
+        if equity != 0:
+            year['debt_to_equity_ratio'] = {
+                'value': liabilities / equity,
+                'description': "Proportion of debt in relation to equity — shows how much debt is used to finance the company compared to its own capital.",
+                'is_percent': False
+            }
+        else:
+            year['debt_to_equity_ratio'] = {
+                'value': None,
+                'description': "Proportion of debt in relation to equity — shows how much debt is used to finance the company compared to its own capital.",
+                'is_percent': False
+            }
+
+        # Leverage Ratio / Equity Ratio
+        if total_capital != 0:
+            year['equity_ratio'] = {
+                'value': (equity / total_capital) * 100,
+                'description': "Proportion of equity in relation to total capital - shows how much of the company is financed by its own capital.",
+                'is_percent': True
+            }
+        else:
+            year['equity_ratio'] = {
+                'value': None,
+                'description': "Proportion of equity in relation to total capital - shows how much of the company is financed by its own capital.",
+                'is_percent': True
+            }
+
+        # Liquidity Ratio
+        if liabilities != 0:
+            liquidity = current_assets / liabilities
+            year['liquidity_ratio'] = {
+                'value': liquidity,
+                'description': "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
+                'is_percent': False
+            }
+            year['current_ratio'] = {
+                'value': liquidity,  # same as liquidity ratio
+                'description': "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
+                'is_percent': False
+            }
+        else:
+            year['liquidity_ratio'] = {'value': None,
+                                       'description': "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
+                'is_percent': False}
+            year['current_ratio'] = {'value': None,
+                                     'description': "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
+                'is_percent': False}
+
     return render_template(
         "company_view.html",
         locked=False,
