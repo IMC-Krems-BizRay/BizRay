@@ -54,7 +54,7 @@ def extract_company_data(info):
                 name: str,
                 date_of_birth: null | str(date),
                 role: str,
-                appointed_on: str(date)
+                appointed_on: null | str(date)
             },
             ...
         ],
@@ -149,18 +149,20 @@ def extract_management_info(info):
         #print(personal_info)
 
         if personal_info:
-            print(personal_info)
+            print(i)
             date_of_birth = personal_info.PE_DKZ02[0].GEBURTSDATUM
 
             formatted_name = personal_info.PE_DKZ02[0].NAME_FORMATIERT
             name = formatted_name[0] if formatted_name is not None else personal_info.PE_DKZ02[0].BEZEICHNUNG[0]
+
+            appointed_on = i.FU_DKZ10[0].DATVON
 
             data = {
                 'pnr': pnr, #not globally unique
                 'name': name,
                 'date_of_birth': json_date(date_of_birth) if date_of_birth else None,
                 'role': i.FKENTEXT,
-                'appointed_on': json_date(i.FU_DKZ10[0].DATVON),
+                'appointed_on': json_date(appointed_on) if appointed_on else None,
             }
             people.append(data)
 
@@ -295,6 +297,7 @@ def get_financial_data(fnr):
     }
     results = client.service.SUCHEURKUNDE(**suche_params).ERGEBNIS
 
+    # FNR_AZ_ZNR_PNR(_ if empty)_FKEN_UNR_DKZURKID_ContentType(PDF/XML)
     # for some reason the content of the documents repeats
     #  [
     #     '435836_5690342302057_000___000_30_30137347_XML', 1
@@ -307,7 +310,7 @@ def get_financial_data(fnr):
     #     '435836_5690682501107_000___000_30_35209229_XML', 3
     #     '435836_5690682501107_000___000_30_35209230_XML'  3
     # ]
-    # I would assume the uniqueness depends on the second set of numbers
+    # I would assume the uniqueness depends on the AZ
 
     pattern = re.compile(r'^\d+_(\d+)_.*XML$')
     keys = set()
