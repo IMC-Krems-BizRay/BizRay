@@ -99,7 +99,7 @@
                                 </div>
 
                                 <!-- Financials in overview start-->
-                                  {% set latest_year = company.financial[-1] %}
+                                  {% set latest_year = company.financial | last %}
 
                                     <div class="popular-categories">
                                         <div class="container">
