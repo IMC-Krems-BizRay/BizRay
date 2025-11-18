@@ -1,4 +1,6 @@
 from backend_api.company_information import company_info
+from backend_api.search import search_by_name
+from backend_api.tests.config import TEST_COMPANY_NAME
 from config import TEST_COMPANY_FNR
 
 def test_company_info():
@@ -24,3 +26,18 @@ def test_company_info():
 
     assert "history" in result
     assert isinstance(result["history"], list)
+
+# very long but gives a lot of test cases
+def test_bulk_company_info():
+    companies = search_by_name(TEST_COMPANY_NAME)
+
+    errors = ""
+    for company in companies:
+        fnr = company["fnr"]
+        try:
+            company_info(fnr)
+        except Exception as e:
+            errors += f"{fnr}: {e}\n=============================\n";
+
+    print(errors)
+    assert errors == ""
