@@ -1,4 +1,4 @@
-from .utils import fetch_companies, get_company_data
+from .utils import fetch_companies, get_company_data, get_risk_indicators
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
 from .models import db, User, bcrypt
 
@@ -212,3 +212,14 @@ def view_company(fnr):
         title="Company view",
         show_back_button=True
     )
+
+@main.route('/view/<fnr>/risk_indicators')
+def risk_indicators(fnr):
+    risk_indicators = get_risk_indicators(fnr)
+    return render_template(
+        "risk_indicators.html",
+        risk_indicators=risk_indicators,
+      fnr=fnr 
+    )   
+
+

@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}Risk Indicators{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+{% endblock %}
+{% block content %}
+<!-- Page heading -->
+<div class="page-heading">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-10">
+        <div class="top-text header-text">
+          <h6>Company risk indicators </h6>
+          <h2>Risk indicators for FNR {{ fnr }}</h2>
+        </div>
+      </div>
+      <div class="col-lg-2 text-end align-self-center">
+        <a href="{{ url_for('main.view_company', fnr=fnr) }}" class="btn btn-outline-light">
+          ← Back to company view
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div id="risk-indicators-page" class="listing-page">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12 col-lg-12">
+        <div class="naccs">
+          <div class="grid">
+            <div class="row">
+
+              <!-- Optional sidebar -->
+              <div class="col-lg-3">
+                <div class="menu">
+                  <div class="first-thumb active">
+                    <div class="thumb">
+                      <span class="icon">
+                        <h4>Sections</h4>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Content column -->
+              <div class="col-lg-9">
+                <ul class="nacc">
+                  <li class="active">
+                    <div>
+                      <div class="thumb">
+                        <div class="row">
+                          <div class="col-lg-12">
+
+                            {# ---- Trend indicators ---- #}
+                            <div class="section-heading">
+                              <h2>Trend indicators</h2>
+                              <h6>How key ratios have changed between the last 3 years</h6>
+                            </div>
+
+                            {% set trend = risk_indicators.trend or {} %}
+
+                            {% if trend %}
+                              <div class="financial-ratio-row">
+                                {% for name, metric in trend.items() %}
+                                  <div class="financial-ratio-box 
+                                    {% if metric.status == 'up' and metric.change_pct and metric.change_pct > 10 %}risk-high
+                                    {% elif metric.status == 'down' and metric.change_pct and metric.change_pct < -10 %}risk-high
+                                    {% elif metric.status == 'up' and metric.change_pct and metric.change_pct > 5 %}risk-medium
+                                    {% elif metric.status == 'down' and metric.change_pct and metric.change_pct < -5 %}risk-medium
+                                    {% else %}risk-low{% endif %}">
+                                    <span class="info-bubble">i</span>
+                                    <span class="tooltip-text">
+                                      Change in {{ name.replace('_', ' ') }} between the last three reporting years.
+                                    </span>
+                                    <div>
+                                      <h5>{{ name.replace('_', ' ')|title }}</h5>
+                                    </div>
+                                    <div class="ratio-value">
+                                      {% if metric.change is not none %}
+                                        {% if metric.status == 'up' %}📈{% elif metric.status == 'down' %}📉{% else %}⏸{% endif %}
+                                        {{ "%.2f"|format(metric.change) }}
+                                        {% if metric.change_pct is not none %}
+                                          ({{ "%.2f"|format(metric.change_pct) }}%)
+                                        {% endif %}
+                                      {% else %}
+                                        Not available
+                                      {% endif %}
+                                    </div>
+                                  </div>
+                                {% endfor %}
+                              </div>
+                            {% else %}
+                              <p>No trend indicators available.</p>
+                            {% endif %}
+
+                            <hr class="my-5">
+
+                            {# ---- Compliance indicators ---- #}
+                            <div class="section-heading">
+                              <h2>Compliance indicators</h2>
+                              <h6>Timeliness and completeness of financial filings</h6>
+                            </div>
+
+                            {% set comp = risk_indicators.compliance or {} %}
+
+                            {% if comp %}
+                              <ul class="list-group mb-4">
+                                <li class="list-group-item d-flex justify-content-between
+                                  {% if comp.avg_delay_months and comp.avg_delay_months > 6 %}border-danger
+                                  {% elif comp.avg_delay_months and comp.avg_delay_months > 3 %}border-warning
+                                  {% else %}border-success{% endif %}">
+                                  <span>Average filing delay</span>
+                                  <strong>
+                                    {% if comp.avg_delay_months is not none %}
+                                      <span class="badge {% if comp.avg_delay_months > 6 %}bg-danger
+                                      {% elif comp.avg_delay_months > 3 %}bg-warning
+                                      {% else %}bg-success{% endif %}">
+                                        {{ "%.1f"|format(comp.avg_delay_months) }} months
+                                      </span>
+                                    {% else %}
+                                      Not available
+                                    {% endif %}
+                                  </strong>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between
+                                  {% if comp.max_delay_months and comp.max_delay_months > 12 %}border-danger
+                                  {% elif comp.max_delay_months and comp.max_delay_months > 6 %}border-warning
+                                  {% else %}border-success{% endif %}">
+                                  <span>Maximum filing delay</span>
+                                  <strong>
+                                    {% if comp.max_delay_months is not none %}
+                                      <span class="badge {% if comp.max_delay_months > 12 %}bg-danger
+                                      {% elif comp.max_delay_months > 6 %}bg-warning
+                                      {% else %}bg-success{% endif %}">
+                                        {{ "%.1f"|format(comp.max_delay_months) }} months
+                                      </span>
+                                    {% else %}
+                                      Not available
+                                    {% endif %}
+                                  </strong>
+                                </li>
+                                <li class="list-group-item {% if comp.has_missing_years %}border-danger{% else %}border-success{% endif %}">
+                                  {% if comp.has_missing_years %}
+                                    <span class="badge bg-danger">⚠️ Missing financial years:</span>
+                                    <strong>{{ comp.missing_years|join(', ') }}</strong>
+                                  {% else %}
+                                    <span class="badge bg-success">✓ No missing financial years detected.</span>
+                                  {% endif %}
+                                </li>
+                              </ul>
+                            {% else %}
+                              <p>No compliance information available.</p>
+                            {% endif %}
+
+                            <hr class="my-5">
+
+                            {# ---- Financial risk flags ---- #}
+                            <div class="section-heading">
+                              <h2>Financial risk flags</h2>
+                              <h6>Derived from balance sheet structure and ratios</h6>
+                            </div>
+
+                            {% set fin_risks = risk_indicators.risk_financial or [] %}
+                            {% if fin_risks %}
+                              <div class="row">
+                                {% for r in fin_risks %}
+                                  <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                      <div class="card-body">
+                                        <h5 class="card-title">
+                                          {{ r.name }}
+                                          {% if r.level %}
+                                            <span class="badge
+                                              {% if r.level == 'high' %}bg-danger
+                                              {% elif r.level == 'medium' %}bg-warning
+                                              {% else %}bg-success{% endif %}">
+                                              {{ r.level|capitalize }}
+                                            </span>
+                                          {% endif %}
+                                        </h5>
+                                        <p class="card-text">{{ r.description }}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                {% endfor %}
+                              </div>
+                            {% else %}
+                              <p>No specific financial risk flags identified.</p>
+                            {% endif %}
+
+                            <hr class="my-5">
+
+                            {# ---- Legal / compliance risk flags ---- #}
+                            <div class="section-heading">
+                              <h2>Legal &amp; compliance risk flags</h2>
+                            </div>
+
+                            {% set legal_risks = risk_indicators.risk_legal or [] %}
+                            {% if legal_risks %}
+                              <div class="row">
+                                {% for r in legal_risks %}
+                                  <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                      <div class="card-body">
+                                        <h5 class="card-title">
+                                          {{ r.name }}
+                                          {% if r.level %}
+                                            <span class="badge
+                                              {% if r.level == 'high' %}bg-danger
+                                              {% elif r.level == 'medium' %}bg-warning
+                                              {% else %}bg-success{% endif %}">
+                                              {{ r.level|capitalize }}
+                                            </span>
+                                          {% endif %}
+                                        </h5>
+                                        <p class="card-text">{{ r.description }}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                {% endfor %}
+                              </div>
+                            {% else %}
+                              <p>No legal or compliance risk flags identified.</p>
+                            {% endif %}
+
+                          </div> <!-- col-lg-12 -->
+                        </div> <!-- row -->
+                      </div> <!-- thumb -->
+                    </div> <!-- div -->
+                  </li>
+                </ul>
+              </div> <!-- col-lg-9 -->
+
+            </div> <!-- row -->
+          </div> <!-- grid -->
+        </div> <!-- naccs -->
+      </div> <!-- col-lg-12 -->
+    </div> <!-- row -->
+  </div> <!-- container -->
+</div> <!-- listing-page -->
+
+{% endblock %}

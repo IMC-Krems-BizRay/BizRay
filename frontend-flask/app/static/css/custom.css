@@ -408,3 +408,151 @@ header.background-header .main-nav .nav li .main-white-button > a {
     font-size: 1.1rem;
   }
 }
+/* RISK INDICATORS  */
+
+/* --- Main page layout --- */
+#risk-indicators-page {
+  padding: 60px 0 80px 0;
+  background-color: #f7f7f7;
+}
+
+#risk-indicators-page .section-heading {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+#risk-indicators-page .section-heading h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+#risk-indicators-page .section-heading h6 {
+  font-size: 0.9rem;
+  color: #777;
+}
+
+/* === Financial ratio boxes (trend indicators) === */
+#risk-indicators-page .financial-ratio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+#risk-indicators-page .financial-ratio-box {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 220px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px 16px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.05);
+  transition: transform 0.15s ease;
+}
+
+#risk-indicators-page .financial-ratio-box:hover {
+  transform: translateY(-2px);
+}
+
+/* === Traffic light color coding (ACCEPTANCE CRITERIA) === */
+#risk-indicators-page .financial-ratio-box.risk-high {
+  border-left: 5px solid #dc3545;      /* Red */
+  background: #fff0f0;
+}
+
+#risk-indicators-page .financial-ratio-box.risk-medium {
+  border-left: 5px solid #ffc107;      /* Yellow */
+  background: #fff8e4;
+}
+
+#risk-indicators-page .financial-ratio-box.risk-low {
+  border-left: 5px solid #28a745;      /* Green */
+  background: #f3fff6;
+}
+
+/* === Tooltip + info bubble === */
+#risk-indicators-page .financial-ratio-box .info-bubble {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  line-height: 19px;
+  border-radius: 50%;
+  border: 1px solid #bbb;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+  cursor: pointer;
+  background: #fafafa;
+}
+
+#risk-indicators-page .financial-ratio-box .tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  z-index: 10;
+  top: 8px;
+  right: 10px;
+  max-width: 260px;
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 6px;
+  transition: opacity 0.2s ease;
+}
+
+#risk-indicators-page.financial-ratio-box:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* === Indicator numeric value === */
+#risk-indicators-page .financial-ratio-box .ratio-value {
+  margin-top: 6px;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* === Short explanations  === */
+#risk-indicators-page .indicator-explainer {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* Compliance Section Styling */
+#risk-indicators-page .list-group-item {
+  border-radius: 8px !important;
+  margin-bottom: 6px;
+  border-color: #e2e2e2;
+  padding: 12px 15px;
+  font-size: 0.95rem;
+}
+
+#risk-indicators-page .list-group-item strong {
+  font-weight: 600;
+}
+
+/* Risk flags (financial + legal) */
+#risk-indicators-page .card {
+  border: none;
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 0 18px rgba(0,0,0,0.05);
+}
+
+#risk-indicators-page .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#risk-indicators-page .card-text {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Badge rounded look */
+#risk-indicators-page .badge {
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
