@@ -37,7 +37,7 @@ def test_bulk_company_info():
         try:
             company_info(fnr)
         except Exception as e:
-            errors += f"{fnr}: {e}\n=============================\n";
+            errors += f"{fnr}: {e}\n=============================\n"
 
     print(errors)
     assert errors == ""
