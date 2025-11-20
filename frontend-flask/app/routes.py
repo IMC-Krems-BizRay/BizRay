@@ -258,13 +258,4 @@ def view_company(fnr):
         show_back_button=True
     )
 
-@main.route('/view/<fnr>/risk_indicators')
-def risk_indicators(fnr):
-    risk_indicators = get_risk_indicators(fnr)
-    return render_template(
-        "risk_indicators.html",
-        risk_indicators=risk_indicators,
-      fnr=fnr 
-    )   
-
 
