@@ -323,9 +323,7 @@ def get_doc_ids(fnr) -> tuple[list[str], int]:
     # That's why it's important to also account for PDF documents to calculate
     # The total number of reports
     results.reverse()
-    print(results)
-
-    doc_ids = [result.KEY for result in results if result.DOKUMENTART.TEXT == "Jahresabschluss"]
+    # print(results)
 
     # Example .KEY: '435836_5690342302057_000___000_30_30137347_XML'
     #               '435836_5690342302057_000__  _000 _30 _30137347_XML'
@@ -342,7 +340,6 @@ def get_doc_ids(fnr) -> tuple[list[str], int]:
             continue
 
         AZ = result.KEY[7:20]
-        print(AZ)
         if AZ in keys:
             continue
 
