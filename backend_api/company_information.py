@@ -1,12 +1,11 @@
+from .client import client
+
 import re
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-
-# import base64
-
-from .client import create_client
 import datetime
 from charset_normalizer import from_bytes
+# import base64
 
 def json_date(date):
     """
@@ -16,8 +15,6 @@ def json_date(date):
 
 #########################LEVEL 1#################################################################
 def company_info(fnr: str):
-    client = create_client()
-
     suche_params = {
         "FNR": fnr,
         "STICHTAG": datetime.date.today(),
@@ -149,7 +146,6 @@ def extract_management_info(info):
         #print(personal_info)
 
         if personal_info:
-            print(i)
             date_of_birth = personal_info.PE_DKZ02[0].GEBURTSDATUM
 
             formatted_name = personal_info.PE_DKZ02[0].NAME_FORMATIERT
@@ -194,8 +190,6 @@ def get_text_or_none(element: ET.Element | None) -> str | None:
     return element.text
 
 def get_xml_data(id):
-    client = create_client()
-
     suche_params = {
         "KEY": id,
         #"SICHTAG": datetime.datetime.today()
@@ -289,13 +283,13 @@ def get_document_data(id):
     return data
 
 def get_financial_data(fnr):
-    client = create_client()
-
     suche_params = {
         "FNR": fnr,
         "AZ": ""
     }
     results = client.service.SUCHEURKUNDE(**suche_params).ERGEBNIS
+
+    print(results)
 
     # FNR_AZ_ZNR_PNR(_ if empty)_FKEN_UNR_DKZURKID_ContentType(PDF/XML)
     # for some reason the content of the documents repeats
@@ -326,8 +320,6 @@ def get_financial_data(fnr):
 
         keys.add(key)
         doc_ids.append(result.KEY)
-
-    print(doc_ids)
                                             # limit to 3 last reports
     return [get_document_data(id) for id in doc_ids[-3:]]
 

@@ -1,7 +1,6 @@
-import math
-
+from .client import client
+from math import ceil
 from cachetools import TTLCache
-from .client import create_client
 from datetime import date
 
 import re
@@ -37,7 +36,7 @@ def search(term: str, page: int) -> dict:
         # pagination
         per_page = 15
         total = len(companies)
-        total_pages = max(1, math.ceil(total / per_page))
+        total_pages = max(1, ceil(total / per_page))
         page = max(1, min(page, total_pages))
 
         start = (page - 1) * per_page
@@ -56,8 +55,6 @@ def search(term: str, page: int) -> dict:
         }
 
 def search_by_name(company_name) -> list[dict]:
-    client = create_client() #for now
-
     #SUCHFIRMA finds the ids of companies with the name like FIRMENWORTLAUT
     suche_params = {
         "FIRMENWORTLAUT": company_name,
@@ -72,7 +69,7 @@ def search_by_name(company_name) -> list[dict]:
     suche_response = client.service.SUCHEFIRMA(**suche_params)
     results = suche_response.ERGEBNIS
 
-    print(f"Found {len(results)} companies for '{company_name}'---------------------------------------------------\n\n\n") #for debugging
+    print(f"Found {len(results)} companies for '{company_name}'") #for debugging
     #print(results[0])
     #print(type(suche_response))
     return [
@@ -91,8 +88,6 @@ def search_by_name(company_name) -> list[dict]:
     ]
 
 def search_by_fnr(company_fnr) -> dict:
-    client = create_client()
-
     suche_params = {
         "FNR": company_fnr,
         "STICHTAG": date.today(),
