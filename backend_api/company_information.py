@@ -3,7 +3,7 @@ from .client import client
 import re
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-import datetime
+from datetime import date, datetime
 from charset_normalizer import from_bytes
 # import base64
 
@@ -17,7 +17,7 @@ def json_date(date):
 def company_info(fnr: str):
     suche_params = {
         "FNR": fnr,
-        "STICHTAG": datetime.date.today(),
+        "STICHTAG": date.today(),
         "UMFANG": "Kurzinformation"
     }
 
@@ -100,9 +100,27 @@ def extract_company_data(info):
                 filed_date: str(date)
             },
             ...
-        ]
+        ],
+        risk_indicators: {
+            filling_delay: int[](days)
+            late_filling_frequency: float(0.0-1.0)
+            missing_reporting_years: int
+        }
     }
     """
+
+    history = extract_company_history(info)
+
+    doc_ids, total_reports = get_doc_ids(info.FNR)
+    financial = [get_document_data(id) for id in doc_ids[-3:]]  # limit to 3 last reports
+
+    filling_delays = [filling_delay(sheet) for sheet in financial]
+    late_filling_frequency = sum(1 for delay in filling_delays if delay > 273) / len(filling_delays)
+
+    # the first history event is always a company creation
+    first_year = history[0]['filed_date'].year
+    expected_reports = date.today().year - first_year
+    missing_reporting_years = expected_reports - total_reports
 
     data = {
         'basic_info': {
@@ -113,8 +131,13 @@ def extract_company_data(info):
         },
         'location': extract_location_info(info),
         'management': extract_management_info(info),
-        'financial': get_financial_data(info.FNR),
-        'history': extract_company_history(info),
+        'financial': financial,
+        'history': history,
+        'risk_indicators': {
+            'filling_delay': filling_delays,
+            'late_filling_frequency': late_filling_frequency,
+            'missing_reporting_years': missing_reporting_years
+        }
     }
 
     return data
@@ -282,7 +305,7 @@ def get_document_data(id):
 
     return data
 
-def get_financial_data(fnr):
+def get_doc_ids(fnr) -> tuple[list[str], int]:
     suche_params = {
         "FNR": fnr,
         "AZ": ""
@@ -292,23 +315,25 @@ def get_financial_data(fnr):
     print(results)
 
     # FNR_AZ_ZNR_PNR(_ if empty)_FKEN_UNR_DKZURKID_ContentType(PDF/XML)
-    # for some reason the content of the documents repeats
+    # This gives us 3 documents for each year: Jahresabschluss, Lagebericht, Bestätigungsvermerk zum Jahresabschluss
+    # Different years can be indicated by AZ
+    # First document is always going to be Jahreabschluss, so we
+    # can just always pick the first match from the pool of documents with the same AZ
     #  [
-    #     '435836_5690342302057_000___000_30_30137347_XML', 1
-    #     '435836_5690342302057_000___000_30_30137348_XML', 1
-    #     '435836_5690342302057_000___000_30_30137350_XML', 1
-    #     '435836_5690342400412_000___000_30_32334332_XML', 2
-    #     '435836_5690342400412_000___000_30_32334333_XML', 2
-    #     '435836_5690342400412_000___000_30_32334335_XML', 2
-    #     '435836_5690682501107_000___000_30_35209228_XML', 3
-    #     '435836_5690682501107_000___000_30_35209229_XML', 3
-    #     '435836_5690682501107_000___000_30_35209230_XML'  3
+    #     '435836_5690342302057_000___000_30_30137347_XML', 1 Jahreabschluss
+    #     '435836_5690342302057_000___000_30_30137348_XML', 1 Lagebericht
+    #     '435836_5690342302057_000___000_30_30137350_XML', 1 Bestätigungsvermerk zum Jahresabschluss
+    #     '435836_5690342400412_000___000_30_32334332_XML', 2 Jahreabschluss
+    #     '435836_5690342400412_000___000_30_32334333_XML', 2 Lagebericht
+    #     '435836_5690342400412_000___000_30_32334335_XML', 2 Bestätigungsvermerk zum Jahresabschluss
+    #     '435836_5690682501107_000___000_30_35209228_XML', 3 Jahreabschluss
+    #     '435836_5690682501107_000___000_30_35209229_XML', 3 Lagebericht
+    #     '435836_5690682501107_000___000_30_35209230_XML'  3 Bestätigungsvermerk zum Jahresabschluss
     # ]
-    # I would assume the uniqueness depends on the AZ
 
-    pattern = re.compile(r'^\d+_(\d+)_.*XML$')
     keys = set()
     doc_ids = []
+    pattern = re.compile(r'^\d+_(\d+)_.*XML$')
     for result in results:
         match = pattern.fullmatch(result.KEY)
         if not match:
@@ -320,8 +345,31 @@ def get_financial_data(fnr):
 
         keys.add(key)
         doc_ids.append(result.KEY)
-                                            # limit to 3 last reports
-    return [get_document_data(id) for id in doc_ids[-3:]]
+
+    total_years = len(doc_ids)
+
+    pattern = re.compile(r'^\d+_(\d+)_.*PDF$')
+    # After getting all possible xmls check for pdfs to fill the gaps year in case xml document is not present
+    for result in results:
+        match = pattern.fullmatch(result.KEY)
+        if not match:
+            continue
+
+        key = match.group(1)
+        if key in keys:
+            continue
+
+        keys.add(key)
+        total_years += 1
+
+    return doc_ids, total_years
+
+
+def filling_delay(sheet) -> int:
+    submission = datetime.strptime(sheet['submission_date'], "%Y-%m-%d")
+    year_end = datetime.strptime(sheet['fiscal_year']['end'], "%Y-%m-%d")
+
+    return (submission - year_end).days
 
 
 ######################LEVEL 3##########################################################
