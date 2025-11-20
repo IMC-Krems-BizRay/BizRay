@@ -1,15 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   <!-- ***** Main Banner Start ***** -->
   <div class="main-banner">
     <div class="container">
       <div class="row">
+
         <div class="col-lg-12">
           <div class="top-text header-text">
             <h2>We provide everything you need to know, to know who you are doing business with!</h2>
           </div>
         </div>
+
         <div class="col-lg-12">
           <form id="search-form" name="gs" method="get" role="search" action="{{ url_for('main.search_results') }}">
             <div class="row">
@@ -29,6 +32,46 @@
             </div>
           </form>
         </div>
+
+        <!-- ========================================================= -->
+        <!-- RECENT SEARCHES (SEPARATE CARDS)                         -->
+        <!-- ========================================================= -->
+
+        {% if logged_in and recent_searches %}
+        <div class="col-lg-12 mt-5">
+
+          <!-- Beautiful title -->
+          <h3 style="font-weight: 600; color: white; margin-bottom: 20px;">
+            Your Recent Searches
+          </h3>
+
+          <!-- Grid of little cards -->
+          <div class="row">
+
+            {% for s in recent_searches %}
+            <div class="col-md-4 mb-3">
+              <div class="p-3 shadow-sm"
+                   style="background: #ffffff; border-radius: 10px;">
+
+                <!-- Search Text -->
+                <a href="{{ url_for('main.search_results', query=s.search_text) }}"
+                   style="font-size: 16px; font-weight: 600; color: #3366cc; text-decoration: none;">
+                  {{ s.search_text }}
+                </a>
+
+                <!-- Timestamp -->
+                <div style="font-size: 13px; color: #888; margin-top: 6px;">
+                  {{ s.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </div>
+
+              </div>
+            </div>
+            {% endfor %}
+
+          </div> <!-- row end -->
+        </div>
+        {% endif %}
+
       </div>
     </div>
   </div>

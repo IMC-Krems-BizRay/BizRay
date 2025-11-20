@@ -1,6 +1,6 @@
 from .utils import fetch_companies, get_company_data, get_risk_indicators
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
-from .models import db, User, bcrypt
+from .models import db, User, bcrypt, SearchHistory
 
 main = Blueprint("main", __name__)
 
@@ -8,7 +8,25 @@ main = Blueprint("main", __name__)
 
 @main.route("/")
 def index():
-    return render_template("index.html", page='index', logged_in=session.get("logged_in"))
+    user_id = session.get("user_id")
+    recent = []
+
+    if user_id:
+        recent = (
+            SearchHistory.query
+            .filter_by(user_id=user_id)
+            .order_by(SearchHistory.created_at.desc())
+            .limit(5)
+            .all()
+        )
+
+    return render_template(
+        "index.html",
+        page='index',
+        logged_in=session.get("logged_in"),
+        recent_searches=recent
+    )
+
 
 @main.route("/login", methods=["GET", "POST"])
 def login():
@@ -86,6 +104,14 @@ def search_results():
         print(f"Error while fetching or processing results: {e}")
         # fallback values if something goes wrong
         result = {'total_pages': 1, 'companies': []}
+
+    # Store search for logged-in users (only once per query, when on page 1)
+    if session.get("logged_in") and query and page == 1:
+        user_id = session.get("user_id")
+        if user_id:
+            entry = SearchHistory(search_text=query, user_id=user_id)
+            db.session.add(entry)
+            db.session.commit()
 
 
     return render_template(
