@@ -103,7 +103,7 @@ def extract_company_data(info):
         ],
         risk_indicators: {
             filling_delay: int[](days)
-            late_filling_frequency: float(0.0-1.0)
+            late_filling_frequency: null | float(0.0-1.0)
             missing_reporting_years: int
         }
     }
@@ -112,10 +112,14 @@ def extract_company_data(info):
     history = extract_company_history(info)
 
     doc_ids, total_reports = get_doc_ids(info.FNR)
-    financial = [get_document_data(id) for id in doc_ids[-3:]]  # limit to 3 last reports
+    financial = [get_document_data(id) for id in doc_ids[:3]]  # limit to 3 last reports
 
     filling_delays = [filling_delay(sheet) for sheet in financial]
-    late_filling_frequency = sum(1 for delay in filling_delays if delay > 273) / len(filling_delays)
+    if filling_delays:
+                                                                            # approximately 9 months
+        late_filling_frequency = sum(1 for delay in filling_delays if delay > 273) / len(filling_delays)
+    else:
+        late_filling_frequency = None
 
     # the first history event is always a company creation
     first_year = history[0]['filed_date'].year
@@ -124,10 +128,10 @@ def extract_company_data(info):
 
     data = {
         'basic_info': {
-            'company_name': info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0] if len(info.FIRMA.FI_DKZ02) > 0 else None,
-            'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT if len(info.FIRMA.FI_DKZ07) > 0 else None,
+            'company_name': info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0] if info.FIRMA.FI_DKZ02 else None,
+            'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT if info.FIRMA.FI_DKZ07 else None,
             'company_number': info.FNR,
-            'european_id': info.EUID[0].EUID if len(info.EUID) > 0 else None,
+            'european_id': info.EUID[0].EUID if info.EUID else None,
         },
         'location': extract_location_info(info),
         'management': extract_management_info(info),
@@ -143,7 +147,7 @@ def extract_company_data(info):
     return data
 
 def extract_location_info(info):
-    if len(info.FIRMA.FI_DKZ03) < 1:
+    if not info.FIRMA.FI_DKZ03:
         return None
 
     address = info.FIRMA.FI_DKZ03[0]
@@ -159,7 +163,7 @@ def extract_location_info(info):
     return data
 
 def extract_management_info(info):
-    if len(info.FUN) < 1:
+    if not info.FUN:
         return []
 
     people = []
@@ -188,7 +192,7 @@ def extract_management_info(info):
     return people
 
 def extract_company_history(info):
-    if len(info.VOLLZ) < 1:
+    if not info.VOLLZ:
         return []
 
     history = []
@@ -310,57 +314,42 @@ def get_doc_ids(fnr) -> tuple[list[str], int]:
         "FNR": fnr,
         "AZ": ""
     }
-    results = client.service.SUCHEURKUNDE(**suche_params).ERGEBNIS
-
+    results: list = client.service.SUCHEURKUNDE(**suche_params).ERGEBNIS
+    # The results are divided into 2 sections: PDF and XML
+    # Sections are ordered by date from oldest to latest
+    # PDFs come first, XMLs come afterwards
+    # By reversing this list we can receive latest XMLs first
+    # There is always a PDF alternative to the XML, but not the opposite
+    # That's why it's important to also account for PDF documents to calculate
+    # The total number of reports
+    results.reverse()
     print(results)
 
-    # FNR_AZ_ZNR_PNR(_ if empty)_FKEN_UNR_DKZURKID_ContentType(PDF/XML)
-    # This gives us 3 documents for each year: Jahresabschluss, Lagebericht, Bestätigungsvermerk zum Jahresabschluss
-    # Different years can be indicated by AZ
-    # First document is always going to be Jahreabschluss, so we
-    # can just always pick the first match from the pool of documents with the same AZ
-    #  [
-    #     '435836_5690342302057_000___000_30_30137347_XML', 1 Jahreabschluss
-    #     '435836_5690342302057_000___000_30_30137348_XML', 1 Lagebericht
-    #     '435836_5690342302057_000___000_30_30137350_XML', 1 Bestätigungsvermerk zum Jahresabschluss
-    #     '435836_5690342400412_000___000_30_32334332_XML', 2 Jahreabschluss
-    #     '435836_5690342400412_000___000_30_32334333_XML', 2 Lagebericht
-    #     '435836_5690342400412_000___000_30_32334335_XML', 2 Bestätigungsvermerk zum Jahresabschluss
-    #     '435836_5690682501107_000___000_30_35209228_XML', 3 Jahreabschluss
-    #     '435836_5690682501107_000___000_30_35209229_XML', 3 Lagebericht
-    #     '435836_5690682501107_000___000_30_35209230_XML'  3 Bestätigungsvermerk zum Jahresabschluss
-    # ]
+    doc_ids = [result.KEY for result in results if result.DOKUMENTART.TEXT == "Jahresabschluss"]
 
+    # Example .KEY: '435836_5690342302057_000___000_30_30137347_XML'
+    #               '435836_5690342302057_000__  _000 _30 _30137347_XML'
+    # (_ if empty)   FNR   _AZ           _ZNR_PNR_FKEN_UNR_DKZURKID_ContentType(PDF/XML)
+    # The same document can be distincted by AZ
+    # The FNR and AZ are fixed size and must always be present
+    # which means that AZ always lays in the range [7:20] (exclusive)
+    # It's important to receive XMLs first since the first document takes it's uniqueness
     keys = set()
     doc_ids = []
-    pattern = re.compile(r'^\d+_(\d+)_.*XML$')
+    total_years = 0
     for result in results:
-        match = pattern.fullmatch(result.KEY)
-        if not match:
+        if result.DOKUMENTART.TEXT != "Jahresabschluss":
             continue
 
-        key = match.group(1)
-        if key in keys:
+        AZ = result.KEY[7:20]
+        print(AZ)
+        if AZ in keys:
             continue
 
-        keys.add(key)
-        doc_ids.append(result.KEY)
-
-    total_years = len(doc_ids)
-
-    pattern = re.compile(r'^\d+_(\d+)_.*PDF$')
-    # After getting all possible xmls check for pdfs to fill the gaps year in case xml document is not present
-    for result in results:
-        match = pattern.fullmatch(result.KEY)
-        if not match:
-            continue
-
-        key = match.group(1)
-        if key in keys:
-            continue
-
-        keys.add(key)
+        keys.add(AZ)
         total_years += 1
+        if result.KEY.endswith("XML"):
+            doc_ids.append(result.KEY)
 
     return doc_ids, total_years
 
