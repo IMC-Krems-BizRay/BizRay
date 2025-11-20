@@ -122,7 +122,7 @@
                                   </div>
 
                                   <div class="financial-ratio-row">
-                                    {% for key, ratio in latest_year.items() if key in ['working_capital', 'debt_to_equity_ratio', 'equity_ratio', 'liquidity_ratio', 'current_ratio'] %}
+                                    {% for key, ratio in latest_year.items() if key in ['working_capital', 'debt_to_equity_ratio', 'equity_ratio','cash_ratio', 'quick_ratio', 'current_ratio','fixed_asset_coverage' ] %}
                                       <div class="financial-ratio-box">
                                         <span class="info-bubble">i</span>
                                         <span class="tooltip-text">{{ ratio.description }}</span>
@@ -299,7 +299,7 @@
                                                 <br>
                                                 <h2 class="section-header">Financial Risk Indicators</h2>
                                                   <div class="financial-ratio-row">
-                                                    {% for key, ratio in year.items() if key in ['working_capital', 'debt_to_equity_ratio', 'equity_ratio', 'liquidity_ratio', 'current_ratio'] %}
+                                                    {% for key, ratio in year.items() if key in ['working_capital', 'debt_to_equity_ratio', 'equity_ratio','cash_ratio', 'quick_ratio', 'current_ratio', 'fixed_asset_coverage'] %}
                                                       <div class="financial-ratio-box">
                                                         <span class="info-bubble" >i</span>
                                                         <span class="tooltip-text">{{ ratio.description }}</span>
@@ -333,7 +333,7 @@
                                                   {'key':'inventories', 'label':'Inventories', 'group':2},
                                                   {'key':'receivables', 'label':'Receivables', 'group':2},
                                                   {'key':'securities', 'label':'Securities / short-term financial assets', 'group':2},
-                                                  {'key':'cash_bank', 'label':'Cash & bank balances', 'group':2},
+                                                  {'key':'cash_and_bank_balances', 'label':'Cash & bank balances', 'group':2},
                                                   {'key':'prepaid_expenses', 'label':'Prepaid expenses & deferred charges', 'group':1},
                                                   {'key':'deferred_tax_assets', 'label':'Deferred tax assets', 'group':1}
                                                 ] %}

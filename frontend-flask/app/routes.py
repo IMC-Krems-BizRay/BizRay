@@ -144,14 +144,21 @@ def view_company(fnr):
 
     for year in company["financial"]:
         # Default values to avoid division by zero
-        current_assets = year.get('current_assets', 0)
-        liabilities = year.get('liabilities', 0)
-        equity = year.get('equity', 0)
-        total_capital = year.get('total_liabilities', 0)
+        current_assets = year.get('current_assets', 0) or 0
+        liabilities = year.get('liabilities', 0) or 0
+        equity = year.get('equity', 0) or 0
+        total_capital = year.get('total_liabilities', 0) or 0
+        deferred_income = year.get('deferred_income', 0) or 0
+        total_liabilities = year.get('total_liabilities', 0) or 0
+        fixed_assets = year.get('fixed_assets', 0) or 0
+        total_assets = year.get('total_assets', 0) or 0
+        cash = year.get('cash_and_bank_balances', 0) or 0
+        securities = year.get('securities', 0) or 0
+        receivables = year.get('receivables', 0) or 0
 
         # Working Capital
         year['working_capital'] = {
-            'value': current_assets - liabilities,
+            'value': current_assets - deferred_income,
             'description': "Current assets minus current liabilities - indicates short-term financial health.",
             'is_percent': False
         }
@@ -185,8 +192,9 @@ def view_company(fnr):
             }
 
         # Liquidity Ratio
-        if liabilities != 0:
-            liquidity = current_assets / liabilities
+        if deferred_income != 0:
+            quick_assets = cash + securities + receivables
+            liquidity = current_assets / deferred_income
             year['liquidity_ratio'] = {
                 'value': liquidity,
                 'description': "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
@@ -194,7 +202,17 @@ def view_company(fnr):
             }
             year['current_ratio'] = {
                 'value': liquidity,  # same as liquidity ratio
-                'description': "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
+                'description': "Measures the ability to cover short-term obligations using all current assets.",
+                'is_percent': False
+            }
+            year['cash_ratio'] = {
+                'value': cash / deferred_income,
+                'description': "Measures immediate liquidity — compares cash to short-term liabilities.",
+                'is_percent': False
+            }
+            year['quick_ratio'] = {
+                'value': quick_assets / deferred_income,
+                'description': "Ability to cover short-term obligations using cash, securities, and receivables — excludes inventories.",
                 'is_percent': False
             }
         else:
@@ -202,8 +220,35 @@ def view_company(fnr):
                                        'description': "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
                 'is_percent': False}
             year['current_ratio'] = {'value': None,
-                                     'description': "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
-                'is_percent': False}
+                                     'description': "Measures the ability to cover short-term obligations using all current assets.",
+                'is_percent': False
+                                     }
+            year['cash_ratio'] = {
+                'value': None,
+                'description': "Measures immediate liquidity — compares cash to short-term liabilities.",
+                'is_percent': False
+            }
+            year['quick_ratio'] = {
+                'value': None,
+                'description': "Ability to cover short-term obligations using cash, securities, and receivables — excludes inventories.",
+                'is_percent': False
+            }
+
+
+
+        # Equity-to-Assets Ratio
+        if fixed_assets != 0:
+            year['fixed_asset_coverage'] = {
+                'value': (equity / fixed_assets) * 100,
+                'description': "Measures how much of the company’s fixed assets are financed by equity — shows the solidity of long-term financing.",
+                'is_percent': True
+            }
+        else:
+            year['fixed_asset_coverage'] = {
+                'value': None,
+                'description': "Measures how much of the company’s fixed assets are financed by equity — shows the solidity of long-term financing.",
+                'is_percent': True
+            }
 
     return render_template(
         "company_view.html",
