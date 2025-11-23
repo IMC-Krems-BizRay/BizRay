@@ -1,6 +1,7 @@
 from .utils import fetch_companies, get_company_data, get_risk_indicators
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
 from .models import db, User, bcrypt, SearchHistory
+from datetime import datetime
 
 main = Blueprint("main", __name__)
 
@@ -143,14 +144,16 @@ def view_company(fnr):
             login_next=request.full_path,
             company=company_stub,
             title="Company view",
-            show_back_button=True,
-            overview_trend={}
+            show_back_button=True
         )
 
+    # Logged in: fetch and normalize real data
     company = get_company_data(fnr)
 
-    # ---------- FINANCIAL INDICATORS PER YEAR ----------
-    for year in company["financial"]:
+    financial_years = company.get("financial", [])
+
+    # ---------- FINANCIAL RATIOS PER YEAR ----------
+    for year in financial_years:
         current_assets = year.get('current_assets', 0) or 0
         liabilities = year.get('liabilities', 0) or 0
         equity = year.get('equity', 0) or 0
@@ -238,7 +241,7 @@ def view_company(fnr):
                 'is_percent': False
             }
 
-        # Fixed Asset Coverage I
+        # Fixed asset coverage (equity / fixed assets)
         if fixed_assets != 0:
             fac_val = (equity / fixed_assets) * 100
         else:
@@ -250,14 +253,12 @@ def view_company(fnr):
         }
 
     # ---------- TREND INDICATORS ----------
-    financial_years = company["financial"]
     overview_trend = {}
-
     if len(financial_years) > 1:
         # sort oldest -> newest
         financial_years.sort(key=lambda y: y["fiscal_year"]["start"])
 
-        # YoY trends per year (for Financial tab, vs previous year)
+        # Per-year YoY trends (for Financial tab)
         for i in range(1, len(financial_years)):
             prev = financial_years[i - 1]
             curr = financial_years[i]
@@ -302,36 +303,36 @@ def view_company(fnr):
                 "is_percent": True,
             }
 
-            # Equity Ratio Trend (YoY difference)
+            # Equity Ratio Trend (YoY diff, p.p.)
             if prev_equity_ratio is not None and curr_equity_ratio is not None:
                 ert_val = curr_equity_ratio - prev_equity_ratio
             else:
                 ert_val = None
             curr["equity_ratio_trend"] = {
                 "value": ert_val,
-                "description": "Tracks how the share of equity in total capital develops over multiple years.",
+                "description": "Tracks how the share of equity in total capital develops compared to the previous year.",
                 "is_percent": True,
             }
 
-            # Total Assets Trend (YoY absolute difference)
+            # Total Assets Trend (YoY abs)
             if prev_total_assets is not None and curr_total_assets is not None:
                 tat_val = curr_total_assets - prev_total_assets
             else:
                 tat_val = None
             curr["total_assets_trend"] = {
                 "value": tat_val,
-                "description": "Examines total assets across periods — indicates long-term business growth or contraction.",
+                "description": "Absolute change in total assets compared to the previous year.",
                 "is_percent": False,
             }
 
-            # Working Capital Trend (YoY)
+            # Working Capital Trend (YoY abs)
             if prev_wc is not None and curr_wc is not None:
                 wct_val = curr_wc - prev_wc
             else:
                 wct_val = None
             curr["working_capital_trend"] = {
                 "value": wct_val,
-                "description": "Shows how short-term liquidity develops over several years.",
+                "description": "Change in working capital compared to the previous year.",
                 "is_percent": False,
             }
 
@@ -342,7 +343,7 @@ def view_company(fnr):
                 crd_val = None
             curr["current_ratio_development"] = {
                 "value": crd_val,
-                "description": "Measures how liquidity evolves relative to short-term liabilities.",
+                "description": "Change in current ratio compared to the previous year.",
                 "is_percent": False,
             }
 
@@ -353,7 +354,7 @@ def view_company(fnr):
                 det_val = None
             curr["debt_to_equity_trend"] = {
                 "value": det_val,
-                "description": "Shows how leverage develops — increasing values mean rising financial risk.",
+                "description": "Change in debt-to-equity ratio compared to the previous year.",
                 "is_percent": False,
             }
 
@@ -456,14 +457,135 @@ def view_company(fnr):
             "is_percent": False,
         }
 
+    # ---------- COMPLIANCE INDICATORS (overall period) ----------
+    compliance_overview = {}
+    filing_delays = []
+    late_count = 0
+    years_end = []
+
+    def _parse_date_safe(s):
+        if not s:
+            return None
+        if hasattr(s, "year") and hasattr(s, "month") and hasattr(s, "day"):
+            return datetime(s.year, s.month, s.day)
+        if isinstance(s, str):
+            try:
+                return datetime.fromisoformat(s[:10])
+            except Exception:
+                return None
+        return None
+
+    for year in financial_years:
+        fy = year.get("fiscal_year") or {}
+        fiscal_end_raw = fy.get("end")
+        sub_raw = year.get("submission_date")
+
+        fiscal_end = _parse_date_safe(fiscal_end_raw)
+        submission = _parse_date_safe(sub_raw)
+
+        if fiscal_end:
+            years_end.append(fiscal_end.year)
+
+        if fiscal_end and submission:
+            delay_days = (submission - fiscal_end).days
+            filing_delays.append(delay_days)
+            if delay_days >= 273:
+                late_count += 1
+
+    if filing_delays:
+        avg_delay = sum(filing_delays) / len(filing_delays)
+        max_delay = max(filing_delays)
+        late_freq = (late_count / len(filing_delays)) * 100.0
+    else:
+        avg_delay = None
+        max_delay = None
+        late_freq = None
+
+    if years_end:
+        first_year_end = min(years_end)
+        last_year_end = max(years_end)
+        expected_years = last_year_end - first_year_end + 1
+        reported_years = len(set(years_end))
+        missing_years = max(expected_years - reported_years, 0)
+    else:
+        missing_years = None
+
+    compliance_overview["avg_filing_delay"] = {
+        "label": "Average Filing Delay (days)",
+        "value": avg_delay,
+        "description": "Average number of days between fiscal year end and submission date over the full period.",
+        "is_percent": False,
+    }
+
+    compliance_overview["max_filing_delay"] = {
+        "label": "Max Filing Delay (days)",
+        "value": max_delay,
+        "description": "Longest observed filing delay in days.",
+        "is_percent": False,
+    }
+
+    compliance_overview["late_filing_frequency"] = {
+        "label": "Late Filing Frequency",
+        "value": late_freq,
+        "description": "Share of years where filing delay exceeded 9 months (273 days).",
+        "is_percent": True,
+    }
+
+    compliance_overview["missing_reporting_years"] = {
+        "label": "Missing Reporting Years",
+        "value": missing_years,
+        "description": "Number of expected fiscal years without available reports in the continuous period.",
+        "is_percent": False,
+    }
+
+    # ---------- PER-YEAR COMPLIANCE DETAILS ----------
+    compliance_years = []
+    if financial_years:
+        for year in financial_years:
+            fy = year.get("fiscal_year") or {}
+            start_str = fy.get("start") or ""
+            end_str = fy.get("end") or ""
+
+            start_year = start_str[:4] if len(start_str) >= 4 else ""
+            end_year = end_str[:4] if len(end_str) >= 4 else ""
+
+            if start_year and end_year:
+                label = f"{start_year} / {end_year}" if start_year != end_year else start_year
+            else:
+                label = "Unknown period"
+
+            fiscal_end = _parse_date_safe(end_str)
+            submission = _parse_date_safe(year.get("submission_date"))
+
+            if fiscal_end and submission:
+                delay_days = (submission - fiscal_end).days
+                is_late = delay_days >= 273
+            else:
+                delay_days = None
+                is_late = None
+
+            ta = year.get("total_assets")
+            tl = year.get("total_liabilities")
+            bs_available = (ta is not None and tl is not None)
+
+            compliance_years.append({
+                "label": label,
+                "delay_days": delay_days,
+                "is_late": is_late,
+                "balance_sheet_available": bs_available,
+            })
+
     return render_template(
         "company_view.html",
         locked=False,
         company=company,
         title="Company view",
         show_back_button=True,
-        overview_trend=overview_trend
+        overview_trend=overview_trend,
+        compliance_overview=compliance_overview,
+        compliance_years=compliance_years,
     )
+
 
 
 

@@ -97,21 +97,12 @@
                                   <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
                                 </div>
 
-                                <!-- Financials in overview start-->
+                                {# ---------- Financial indicators (latest year) ---------- #}
                                 {% if company.financial | length > 0 %}
                                   {% set latest_year = company.financial[-1] %}
-
-                                  <div class="popular-categories">
-                                    <div class="container">
-                                      <div class="row">
-                                        <div class="col-lg-12">
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-
                                   <div>
-                                    <h2 class="section-header">Financial Risk Indicators -
+                                    <h2 class="section-header">
+                                      Financial Risk Indicators -
                                       {% if latest_year.fiscal_year.start[:4] == latest_year.fiscal_year.end[:4] %}
                                         {{ latest_year.fiscal_year.start[:4] }}
                                       {% else %}
@@ -121,7 +112,15 @@
                                   </div>
 
                                   <div class="financial-ratio-row">
-                                    {% for key, ratio in latest_year.items() if key in ['working_capital', 'debt_to_equity_ratio', 'equity_ratio', 'cash_ratio', 'quick_ratio', 'current_ratio', 'fixed_asset_coverage'] %}
+                                    {% for key, ratio in latest_year.items() if key in [
+                                      'working_capital',
+                                      'debt_to_equity_ratio',
+                                      'equity_ratio',
+                                      'cash_ratio',
+                                      'quick_ratio',
+                                      'current_ratio',
+                                      'fixed_asset_coverage'
+                                    ] %}
                                       <div class="financial-ratio-box">
                                         <span class="info-bubble">i</span>
                                         <span class="tooltip-text">{{ ratio.description }}</span>
@@ -143,12 +142,12 @@
                                     {% endfor %}
                                   </div>
 
-                                  <!-- TREND INDICATORS IN OVERVIEW (overall period) -->
+                                  {# ---------- Trend Indicators (Overall Period) ---------- #}
                                   {% if company.financial|length > 1 and overview_trend %}
-                                    <div>
-                                      {% set first_year = company.financial[0].fiscal_year %}
-                                      {% set last_year  = company.financial[-1].fiscal_year %}
+                                    {% set first_year = company.financial[0].fiscal_year %}
+                                    {% set last_year  = company.financial[-1].fiscal_year %}
 
+                                    <div>
                                       <h2 class="section-header">
                                         Trend Indicators (Overall Period) -
                                         {% if first_year.start[:4] == last_year.end[:4] %}
@@ -172,29 +171,26 @@
                                     <div class="financial-ratio-row">
                                       {% for key in trend_keys %}
                                         {% set ratio = overview_trend.get(key) %}
-                                            {# ----- DETERMINE RISK COLOR ----- #}
-                                            {% set value = ratio.value if ratio else None %}
-                                            {% set css = "" %}
+                                        {% set value = ratio.value if ratio else None %}
+                                        {% set css = "" %}
 
-                                            {% if value is not none %}
-                                                {# Percent-based metrics (growth rates & equity ratio trend) #}
-                                                {% if ratio.is_percent %}
-                                                    {% if value < 0 %}
-                                                        {% set css = "risk-high" %}    {# red #}
-                                                    {% elif value < 5 %}
-                                                        {% set css = "risk-medium" %}  {# yellow #}
-                                                    {% else %}
-                                                        {% set css = "risk-low" %}     {# green #}
-                                                    {% endif %}
-                                                {% else %}
-                                                    {# Raw-number metrics (working capital, total assets, etc.) #}
-                                                    {% if value < 0 %}
-                                                        {% set css = "risk-high" %}
-                                                    {% else %}
-                                                        {% set css = "risk-low" %}
-                                                    {% endif %}
-                                                {% endif %}
+                                        {% if value is not none %}
+                                          {% if ratio.is_percent %}
+                                            {% if value < 0 %}
+                                              {% set css = "risk-high" %}
+                                            {% elif value < 5 %}
+                                              {% set css = "risk-medium" %}
+                                            {% else %}
+                                              {% set css = "risk-low" %}
                                             {% endif %}
+                                          {% else %}
+                                            {% if value < 0 %}
+                                              {% set css = "risk-high" %}
+                                            {% else %}
+                                              {% set css = "risk-low" %}
+                                            {% endif %}
+                                          {% endif %}
+                                        {% endif %}
 
                                         <div class="financial-ratio-box {{ css }}">
                                           <span class="info-bubble">i</span>
@@ -211,37 +207,183 @@
                                           </div>
 
                                           <div class="ratio-value">
-                                              {% if ratio.value is not none %}
-                                                  {% set val = ratio.value %}
-
-                                                  {# FORMAT WITH + SIGN #}
-                                                  {% if val > 0 %}
-                                                      {% if ratio.is_percent %}
-                                                          +{{ "%.2f"|format(val) }}%
-                                                      {% else %}
-                                                          +{{ "%.2f"|format(val) }}
-                                                      {% endif %}
-                                                  {% elif val < 0 %}
-                                                      {% if ratio.is_percent %}
-                                                          {{ "%.2f"|format(val) }}%
-                                                      {% else %}
-                                                          {{ "%.2f"|format(val) }}
-                                                      {% endif %}
-                                                  {% else %}
-                                                      0
-                                                  {% endif %}
-
+                                            {% if ratio and ratio.value is not none %}
+                                              {% set val = ratio.value %}
+                                              {% if ratio.is_percent %}
+                                                {% if val > 0 %}
+                                                  +{{ "%.2f"|format(val) }}%
+                                                {% elif val < 0 %}
+                                                  {{ "%.2f"|format(val) }}%
+                                                {% else %}
+                                                  0%
+                                                {% endif %}
                                               {% else %}
-                                                  Not available
+                                                {% if val > 0 %}
+                                                  +{{ "%.2f"|format(val) }}
+                                                {% elif val < 0 %}
+                                                  {{ "%.2f"|format(val) }}
+                                                {% else %}
+                                                  0
+                                                {% endif %}
                                               {% endif %}
+                                            {% else %}
+                                              Not available
+                                            {% endif %}
                                           </div>
-
                                         </div>
                                       {% endfor %}
                                     </div>
                                   {% endif %}
                                 {% endif %}
-                                <!-- Financials in overview end-->
+
+                                {# ---------- Compliance Indicators (Overall Period) ---------- #}
+                                {% if compliance_overview and company.financial|length > 0 %}
+                                  {% set first_year = company.financial[0].fiscal_year %}
+                                  {% set last_year  = company.financial[-1].fiscal_year %}
+
+                                  <div>
+                                    <h2 class="section-header">
+                                      Compliance Indicators (Overall Period) -
+                                      {% if first_year.start[:4] == last_year.end[:4] %}
+                                        {{ first_year.start[:4] }}
+                                      {% else %}
+                                        {{ first_year.start[:4] }} / {{ last_year.end[:4] }}
+                                      {% endif %}
+                                    </h2>
+                                  </div>
+
+                                  {% set comp_keys = [
+                                    'avg_filing_delay',
+                                    'max_filing_delay',
+                                    'late_filing_frequency',
+                                    'missing_reporting_years'
+                                  ] %}
+
+                                  <div class="financial-ratio-row">
+                                    {% for key in comp_keys %}
+                                      {% set ind = compliance_overview.get(key) %}
+                                      {% set css = "" %}
+
+                                      {% if ind and ind.value is not none %}
+                                        {% set val = ind.value %}
+
+                                        {% if key == 'avg_filing_delay' %}
+                                          {% if val <= 90 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif val <= 273 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-high" %}
+                                          {% endif %}
+
+                                        {% elif key == 'max_filing_delay' %}
+                                          {% if val <= 180 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif val <= 273 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-high" %}
+                                          {% endif %}
+
+                                        {% elif key == 'late_filing_frequency' %}
+                                          {% if val < 20 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif val <= 50 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-high" %}
+                                          {% endif %}
+
+                                        {% elif key == 'missing_reporting_years' %}
+                                          {% if val == 0 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif val <= 2 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-high" %}
+                                          {% endif %}
+                                        {% endif %}
+                                      {% endif %}
+
+                                      <div class="financial-ratio-box {{ css }}">
+                                        <span class="info-bubble">i</span>
+                                        <span class="tooltip-text">
+                                          {% if ind %}
+                                            {{ ind.description }}
+                                          {% else %}
+                                            No description available for this indicator.
+                                          {% endif %}
+                                        </span>
+
+                                        <div>
+                                          <h5>
+                                            {% if ind and ind.label %}
+                                              {{ ind.label }}
+                                            {% else %}
+                                              {{ key.replace('_',' ').title() }}
+                                            {% endif %}
+                                          </h5>
+                                        </div>
+
+                                        <div class="ratio-value">
+                                          {% if ind and ind.value is not none %}
+                                            {% set val = ind.value %}
+                                            {% if ind.is_percent %}
+                                              {% if val > 0 %}
+                                                +{{ "%.2f"|format(val) }}%
+                                              {% elif val < 0 %}
+                                                {{ "%.2f"|format(val) }}%
+                                              {% else %}
+                                                0%
+                                              {% endif %}
+                                            {% else %}
+                                              {{ "%.0f"|format(val) }}
+                                            {% endif %}
+                                          {% elif ind %}
+                                            Not available
+                                          {% else %}
+                                            Not found
+                                          {% endif %}
+                                        </div>
+                                      </div>
+                                    {% endfor %}
+                                  </div>
+
+                                  {% if compliance_years %}
+                                    <div style="margin-top: 15px; padding-left: 20px;">
+                                      {% for y in compliance_years %}
+                                        <div class="mb-2">
+                                          <strong>{{ y.label }}:</strong><br>
+
+                                          {% if y.delay_days is not none %}
+                                            Filing delay:
+                                            {{ y.delay_days|int }} days
+                                            {% if y.is_late %}
+                                              <span class="badge bg-danger ms-1">
+                                                Late (&gt; 9 months)
+                                              </span>
+                                            {% else %}
+                                              <span class="badge bg-success ms-1">
+                                                On time
+                                              </span>
+                                            {% endif %}
+                                          {% else %}
+                                            Filing delay: Not available
+                                          {% endif %}
+                                          <br>
+
+                                          Balance sheet:
+                                          {% if y.balance_sheet_available %}
+                                            <span class="badge bg-success ms-1">Available</span>
+                                          {% else %}
+                                            <span class="badge bg-warning text-dark ms-1">Not available</span>
+                                          {% endif %}
+                                        </div>
+                                      {% endfor %}
+                                    </div>
+                                  {% endif %}
+                                {% endif %}
+                                {# ---------- Compliance end ---------- #}
 
                               </div>
                             </div>
@@ -250,6 +392,7 @@
                       </div>
                     </div>
                   </li>
+
 
                   <!-- Location -->
                   <li>
