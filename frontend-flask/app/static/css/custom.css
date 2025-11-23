@@ -454,18 +454,19 @@ header.background-header .main-nav .nav li .main-white-button > a {
 }
 
 /* === Traffic light color coding (ACCEPTANCE CRITERIA) === */
-#risk-indicators-page .financial-ratio-box.risk-high {
-  border-left: 5px solid #dc3545;      /* Red */
+/* Global traffic-light colors for financial boxes */
+.financial-ratio-box.risk-high {
+  border-left: 5px solid #dc3545;      /* red */
   background: #fff0f0;
 }
 
-#risk-indicators-page .financial-ratio-box.risk-medium {
-  border-left: 5px solid #ffc107;      /* Yellow */
+.financial-ratio-box.risk-medium {
+  border-left: 5px solid #ffc107;      /* yellow */
   background: #fff8e4;
 }
 
-#risk-indicators-page .financial-ratio-box.risk-low {
-  border-left: 5px solid #28a745;      /* Green */
+.financial-ratio-box.risk-low {
+  border-left: 5px solid #28a745;      /* green */
   background: #f3fff6;
 }
 

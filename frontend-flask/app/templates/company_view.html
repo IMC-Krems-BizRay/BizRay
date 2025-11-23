@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Company – {{ company.basic_info.company_name or 'Details' }}{% endblock %}
 
-
 {% block content %}
 
 <div id="company-page" class="{% if locked %}content-blurred{% endif %}">
@@ -87,7 +86,7 @@
                   <li class="active">
                     <div>
                       <div class="thumb">
-                        <div class="row" style="margin-top:35px ;">
+                        <div class="row" style="margin-top:35px;">
                           <div class="col-lg-12">
                             <div class="description">
                               <div class="row">
@@ -106,11 +105,11 @@
                                     <div class="container">
                                       <div class="row">
                                         <div class="col-lg-12">
-
                                         </div>
                                       </div>
                                     </div>
                                   </div>
+
                                   <div>
                                     <h2 class="section-header">Financial Risk Indicators -
                                       {% if latest_year.fiscal_year.start[:4] == latest_year.fiscal_year.end[:4] %}
@@ -122,7 +121,7 @@
                                   </div>
 
                                   <div class="financial-ratio-row">
-                                    {% for key, ratio in latest_year.items() if key in ['working_capital', 'debt_to_equity_ratio', 'equity_ratio','cash_ratio', 'quick_ratio', 'current_ratio','fixed_asset_coverage' ] %}
+                                    {% for key, ratio in latest_year.items() if key in ['working_capital', 'debt_to_equity_ratio', 'equity_ratio', 'cash_ratio', 'quick_ratio', 'current_ratio', 'fixed_asset_coverage'] %}
                                       <div class="financial-ratio-box">
                                         <span class="info-bubble">i</span>
                                         <span class="tooltip-text">{{ ratio.description }}</span>
@@ -143,8 +142,106 @@
                                       </div>
                                     {% endfor %}
                                   </div>
-                                  <!--  financials in Overview end-->
+
+                                  <!-- TREND INDICATORS IN OVERVIEW (overall period) -->
+                                  {% if company.financial|length > 1 and overview_trend %}
+                                    <div>
+                                      {% set first_year = company.financial[0].fiscal_year %}
+                                      {% set last_year  = company.financial[-1].fiscal_year %}
+
+                                      <h2 class="section-header">
+                                        Trend Indicators (Overall Period) -
+                                        {% if first_year.start[:4] == last_year.end[:4] %}
+                                          {{ first_year.start[:4] }}
+                                        {% else %}
+                                          {{ first_year.start[:4] }} / {{ last_year.end[:4] }}
+                                        {% endif %}
+                                      </h2>
+                                    </div>
+
+                                    {% set trend_keys = [
+                                      'asset_growth_rate',
+                                      'equity_growth_rate',
+                                      'equity_ratio_trend',
+                                      'total_assets_trend',
+                                      'working_capital_trend',
+                                      'current_ratio_development',
+                                      'debt_to_equity_trend'
+                                    ] %}
+
+                                    <div class="financial-ratio-row">
+                                      {% for key in trend_keys %}
+                                        {% set ratio = overview_trend.get(key) %}
+                                            {# ----- DETERMINE RISK COLOR ----- #}
+                                            {% set value = ratio.value if ratio else None %}
+                                            {% set css = "" %}
+
+                                            {% if value is not none %}
+                                                {# Percent-based metrics (growth rates & equity ratio trend) #}
+                                                {% if ratio.is_percent %}
+                                                    {% if value < 0 %}
+                                                        {% set css = "risk-high" %}    {# red #}
+                                                    {% elif value < 5 %}
+                                                        {% set css = "risk-medium" %}  {# yellow #}
+                                                    {% else %}
+                                                        {% set css = "risk-low" %}     {# green #}
+                                                    {% endif %}
+                                                {% else %}
+                                                    {# Raw-number metrics (working capital, total assets, etc.) #}
+                                                    {% if value < 0 %}
+                                                        {% set css = "risk-high" %}
+                                                    {% else %}
+                                                        {% set css = "risk-low" %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+
+                                        <div class="financial-ratio-box {{ css }}">
+                                          <span class="info-bubble">i</span>
+                                          <span class="tooltip-text">
+                                            {% if ratio %}
+                                              {{ ratio.description }}
+                                            {% else %}
+                                              No description available for this indicator.
+                                            {% endif %}
+                                          </span>
+
+                                          <div>
+                                            <h5>{{ key.replace('_',' ').title() }}</h5>
+                                          </div>
+
+                                          <div class="ratio-value">
+                                              {% if ratio.value is not none %}
+                                                  {% set val = ratio.value %}
+
+                                                  {# FORMAT WITH + SIGN #}
+                                                  {% if val > 0 %}
+                                                      {% if ratio.is_percent %}
+                                                          +{{ "%.2f"|format(val) }}%
+                                                      {% else %}
+                                                          +{{ "%.2f"|format(val) }}
+                                                      {% endif %}
+                                                  {% elif val < 0 %}
+                                                      {% if ratio.is_percent %}
+                                                          {{ "%.2f"|format(val) }}%
+                                                      {% else %}
+                                                          {{ "%.2f"|format(val) }}
+                                                      {% endif %}
+                                                  {% else %}
+                                                      0
+                                                  {% endif %}
+
+                                              {% else %}
+                                                  Not available
+                                              {% endif %}
+                                          </div>
+
+                                        </div>
+                                      {% endfor %}
+                                    </div>
+                                  {% endif %}
                                 {% endif %}
+                                <!-- Financials in overview end-->
 
                               </div>
                             </div>
@@ -164,48 +261,43 @@
                               <div class="row">
                                 <div class="col-lg-12">
                                   {% if company.location %}
-                                  {# Convert AUT -> Austria etc. for Nominatim reliability #}
-                                  {% set c3map = {
-                                    'AUT':'Austria',
-                                    'DEU':'Germany',
-                                    'CHE':'Switzerland',
-                                    'ITA':'Italy',
-                                    'SVK':'Slovakia',
-                                    'HUN':'Hungary',
-                                    'CZE':'Czechia'
-                                  } %}
-                                  {% set country_name = c3map.get(company.location.country, company.location.country) %}
+                                    {% set c3map = {
+                                      'AUT':'Austria',
+                                      'DEU':'Germany',
+                                      'CHE':'Switzerland',
+                                      'ITA':'Italy',
+                                      'SVK':'Slovakia',
+                                      'HUN':'Hungary',
+                                      'CZE':'Czechia'
+                                    } %}
+                                    {% set country_name = c3map.get(company.location.country, company.location.country) %}
 
-                                  {# Create well-formatted comma-separated address string #}
-                                  {% set address = (
-                                    (company.location.street ~ ' ' ~ company.location.house_number)|trim ~ ', ' ~
-                                    (company.location.postal_code ~ ' ' ~ company.location.city)|trim ~ ', ' ~
-                                    country_name
-                                  ) | trim %}
+                                    {% set address = (
+                                      (company.location.street ~ ' ' ~ company.location.house_number)|trim ~ ', ' ~
+                                      (company.location.postal_code ~ ' ' ~ company.location.city)|trim ~ ', ' ~
+                                      country_name
+                                    ) | trim %}
 
-                                  {# --- Display details --- #}
-                                  <p><strong>Address:</strong> {{ address }}</p>
+                                    <p><strong>Address:</strong> {{ address }}</p>
 
-                                  <!-- Interactive Map -->
-                                  <iframe
-                                    class="map-container"
-                                    style="border:0"
-                                    loading="lazy"
-                                    allowfullscreen
-                                    referrerpolicy="no-referrer-when-downgrade"
-                                    src="https://www.google.com/maps?q={{ address|urlencode }}&output=embed">
-                                  </iframe>
+                                    <iframe
+                                      class="map-container"
+                                      style="border:0"
+                                      loading="lazy"
+                                      allowfullscreen
+                                      referrerpolicy="no-referrer-when-downgrade"
+                                      src="https://www.google.com/maps?q={{ address|urlencode }}&output=embed">
+                                    </iframe>
 
-                                  <!-- Google Maps Redirect -->
-                                  <div class="mt-2">
-                                    <a class="btn btn-light"
-                                      target="_blank"
-                                      href="https://www.google.com/maps/search/?api=1&query={{ address|urlencode }}">
-                                      Open in Google Maps
-                                    </a>
-                                  </div>
+                                    <div class="mt-2">
+                                      <a class="btn btn-light"
+                                         target="_blank"
+                                         href="https://www.google.com/maps/search/?api=1&query={{ address|urlencode }}">
+                                        Open in Google Maps
+                                      </a>
+                                    </div>
                                   {% else %}
-                                       <p><strong>Address:</strong> Unknown</p>
+                                    <p><strong>Address:</strong> Unknown</p>
                                   {% endif %}
                                 </div>
                               </div>
@@ -216,15 +308,14 @@
                     </div>
                   </li>
 
-
                   <!-- Management -->
                   <li>
                     <div>
                       <div class="thumb">
-                        <div class="row" style="margin-top:35px ;"  >
+                        <div class="row" style="margin-top:35px;">
                           <div class="col-lg-12">
                             <div class="description">
-                              <div class="row" >
+                              <div class="row">
                                 <div class="col-lg-12">
                                   {% set managers = company.management or [] %}
                                   {% if managers %}
@@ -242,199 +333,252 @@
                               </div>
                             </div>
                           </div>
-
-
                         </div>
                       </div>
                     </div>
                   </li>
 
-                  <!-- Financial -->
+                                    <!-- Financial -->
                   <li>
                     <div>
                       <div class="thumb">
-                        <div class="row" style="margin-top:35px ;" >
+                        <div class="row" style="margin-top:35px;">
                           <div class="col-lg-12">
                             <div class="description">
                               <div class="row">
                                 <div class="col-lg-12">
+
                                   {% if company.financial | length > 0 %}
-                                    <!-- TEST-->
-                                    <p class="popular-categories">
-                                      <!-- Heading-->
-                                      <div class="container">
-                                        <div class="row">
-                                          <div class="col-lg-12">
-                                            <div class="section-heading">
-                                                <h2>Financial Years</h2>
-                                                <h6>Click on a year to expand or collapse its information</h6>
-                                            </div>
+                                    <div class="container">
+                                      <div class="row">
+                                        <div class="col-lg-12">
+                                          <div class="section-heading" style="margin-bottom: 10px;">
+                                            <h2>Financial Years</h2>
+                                            <h6>Click on a year to expand or collapse its information</h6>
                                           </div>
                                         </div>
                                       </div>
-                                      {% for year in company.financial|reverse%}
-                                        <p class="d-inline-flex gap-1">
-                                          <div class="collapse-block">
-                                            <a class="btn btn-primary"
-                                               data-bs-toggle="collapse"
-                                               href="#collapseExample{{ loop.index }}"
-                                               role="button"
-                                               aria-expanded="false"
-                                               aria-controls="collapseExample{{ loop.index }}">
-                                              {% if year.fiscal_year.start[:4] == year.fiscal_year.end[:4] %}
-                                                <strong>Financial year: </strong> {{ year.fiscal_year.start[:4] }}
-                                              {% else %}
-                                                <strong>Financial year: </strong> {{ year.fiscal_year.start[:4] }} / {{ year.fiscal_year.end[:4] }}
-                                              {% endif %}
-                                            </a>
-                                            <div class="collapse show" id="collapseExample{{ loop.index }}">
-                                              <div class="card card-body">
-                                                <h2 class="section-header"> General Info </h2>
-                                                <br>
+                                    </div>
 
-                                                <p style="padding-left: 20px;"><strong>Financial Director: </strong> {{ year.director_name}} </p>
-                                                <p style="padding-left: 20px;"><strong>Submission Date: </strong> {{ year.submission_date}} </p>
-                                                <p style="padding-left: 20px;"><strong>Fiscal year: </strong> {{ year.fiscal_year.start }} - {{ year.fiscal_year.end }} </p>
-                                                <p style="padding-left: 20px;"><strong>Currency: </strong> {{ year.currency}} </p>
-                                                <br>
-                                                <h2 class="section-header">Financial Risk Indicators</h2>
-                                                  <div class="financial-ratio-row">
-                                                    {% for key, ratio in year.items() if key in ['working_capital', 'debt_to_equity_ratio', 'equity_ratio','cash_ratio', 'quick_ratio', 'current_ratio', 'fixed_asset_coverage'] %}
-                                                      <div class="financial-ratio-box">
-                                                        <span class="info-bubble" >i</span>
-                                                        <span class="tooltip-text">{{ ratio.description }}</span>
-                                                        <div>
-                                                          <h5>{{ key.replace('_',' ').title() }}</h5>
-                                                        </div>
-                                                        <div class="ratio-value">
-                                                          {% if ratio.value is not none %}
-                                                            {% if ratio.is_percent %}
-                                                              {{ "%.2f"|format(ratio.value) }}%
-                                                            {% else %}
-                                                              {{ "%.2f"|format(ratio.value) }}
-                                                            {% endif %}
-                                                          {% else %}
-                                                            Not available
-                                                          {% endif %}
-                                                        </div>
-                                                      </div>
-                                                    {% endfor %}
-                                                  </div>
-                                                  <br>
-                                                <h2 class="section-header">Balance Sheet</h2>
-                                                <br>
-                                                <!-- ASSETS LIST -->
-                                                {% set assets_order = [
-                                                  {'key':'fixed_assets', 'label':'Fixed assets', 'group':1},
-                                                  {'key':'intangible_assets', 'label':'Intangible assets', 'group':2},
-                                                  {'key':'tangible_assets', 'label':'Tangible assets', 'group':2},
-                                                  {'key':'financial_assets', 'label':'Financial assets', 'group':2},
-                                                  {'key':'current_assets', 'label':'Current assets', 'group':1},
-                                                  {'key':'inventories', 'label':'Inventories', 'group':2},
-                                                  {'key':'receivables', 'label':'Receivables', 'group':2},
-                                                  {'key':'securities', 'label':'Securities / short-term financial assets', 'group':2},
-                                                  {'key':'cash_and_bank_balances', 'label':'Cash & bank balances', 'group':2},
-                                                  {'key':'prepaid_expenses', 'label':'Prepaid expenses & deferred charges', 'group':1},
-                                                  {'key':'deferred_tax_assets', 'label':'Deferred tax assets', 'group':1}
+                                    {% for year in company.financial|reverse %}
+                                      <div class="d-inline-flex gap-1">
+                                        <div class="collapse-block">
+                                          <a class="btn btn-primary"
+                                             data-bs-toggle="collapse"
+                                             href="#collapseExample{{ loop.index }}"
+                                             role="button"
+                                             aria-expanded="false"
+                                             aria-controls="collapseExample{{ loop.index }}">
+                                            {% if year.fiscal_year.start[:4] == year.fiscal_year.end[:4] %}
+                                              <strong>Financial year: </strong>&nbsp;{{ year.fiscal_year.start[:4] }}
+                                            {% else %}
+                                              <strong>Financial year: </strong>&nbsp;{{ year.fiscal_year.start[:4] }} / {{ year.fiscal_year.end[:4] }}
+                                            {% endif %}
+                                          </a>
+
+                                          <div class="collapse show" id="collapseExample{{ loop.index }}">
+                                            <div class="card card-body">
+
+                                              {# ---------- GENERAL INFO ---------- #}
+                                              <h2 class="section-header">General Info</h2>
+                                              <br>
+                                              <p style="padding-left: 20px;"><strong>Financial Director: </strong> {{ year.director_name }}</p>
+                                              <p style="padding-left: 20px;"><strong>Submission Date: </strong> {{ year.submission_date }}</p>
+                                              <p style="padding-left: 20px;"><strong>Fiscal year: </strong> {{ year.fiscal_year.start }} - {{ year.fiscal_year.end }}</p>
+                                              <p style="padding-left: 20px;"><strong>Currency: </strong> {{ year.currency }}</p>
+                                              <br>
+
+                                              {# ---------- FINANCIAL RISK INDICATORS (LEVELS) ---------- #}
+                                              <h2 class="section-header">Financial Risk Indicators</h2>
+                                              <div class="financial-ratio-row">
+                                                {% for key, ratio in year.items() if key in [
+                                                  'working_capital',
+                                                  'debt_to_equity_ratio',
+                                                  'equity_ratio',
+                                                  'cash_ratio',
+                                                  'quick_ratio',
+                                                  'current_ratio',
+                                                  'fixed_asset_coverage'
                                                 ] %}
-                                                <div class="asset-row">
-                                                  <h4 class="asset-label-h4">Assets
-                                                    <span class="asset-value-2">
-                                                      {{ "{:,.2f}".format(year.total_assets).replace(",", " ").replace(".", ",") }}
-                                                    </span>
-                                                  </h4>
-                                                </div>
-
-                                                <br>
-
-                                                {% for item in assets_order %}
-                                                  {% set raw_value = year[item.key] if item.key in year else 0 %}
-                                                  {% set value = raw_value if raw_value is not none else 0 %}
-
-                                                  <div class="asset-row">
-                                                    {% if item.group == 1 %}
-                                                      <h5 class="asset-label-h5">{{ item.label }}</h5>
-                                                    {% else %}
-                                                      <h6 class="asset-label-h6">{{ item.label }}</h6>
-                                                    {% endif %}
-                                                      <span class="asset-value">
-                                                        {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
-                                                      </span>
+                                                  <div class="financial-ratio-box">
+                                                    <span class="info-bubble">i</span>
+                                                    <span class="tooltip-text">{{ ratio.description }}</span>
+                                                    <div>
+                                                      <h5>{{ key.replace('_',' ').title() }}</h5>
                                                     </div>
-                                                {% endfor %}
-
-                                                <br>
-                                                <br>
-
-
-
-                                                <!-- LIABILITIES LIST -->
-                                                {% set liabilities_order = [
-                                                  {'key':'equity', 'label':'Equity', 'group':1},
-                                                  {'key':'share_capital', 'label':'Share capital', 'group':2},
-                                                  {'key':'share_capital_subitem', 'label':'Share capital subitem', 'group':3},
-                                                  {'key':'share_capital_subitem_detail', 'label':'Share capital subitem detail', 'group':3},
-                                                  {'key':'capital_reserves', 'label':'Capital reserves', 'group':2},
-                                                  {'key':'revenue_reserves', 'label':'Revenue reserves', 'group':2},
-                                                  {'key':'retained_earnings', 'label':'Retained earnings / net loss', 'group':2},
-                                                  {'key':'retained_earnings_subitem', 'label':'Retained earnings subitem', 'group':3},
-                                                  {'key':'liabilities', 'label':'Liabilities', 'group':1},
-                                                  {'key':'deferred_income', 'label':'Deferred income / accrued liabilities', 'group':1},
-                                                  {'key':'deferred_tax_liabilities', 'label':'Deferred tax liabilities', 'group':1}
-                                                ] %}
-
-                                                <h4 class="asset-label-h4">Liabilities & Equity
-                                                  <span class="asset-value-2">
-                                                    {{ "{:,.2f}".format(year.total_liabilities).replace(",", " ").replace(".", ",") }}
-                                                  </span>
-                                                </h4>
-
-                                                <br>
-
-                                                {% for item in liabilities_order %}
-                                                  {% set raw_value = year[item.key] if item.key in year else 0 %}
-                                                  {% set value = raw_value if raw_value is not none else 0 %}
-
-                                                  <div class="asset-row">
-                                                    {% if item.group == 1 %}
-                                                      <h5 class="asset-label-h5">{{ item.label }}</h5>
-                                                    {% elif item.group == 2  %}
-                                                      <h6 class="asset-label-h6">{{ item.label }}</h6>
-                                                    {% else %}
-                                                      <h6 class="asset-label-h7">{{ item.label }}</h6>
-                                                    {% endif %}
-                                                    <span class="asset-value">
-                                                      {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
-                                                    </span>
+                                                    <div class="ratio-value">
+                                                      {% if ratio.value is not none %}
+                                                        {% if ratio.is_percent %}
+                                                          {{ "%.2f"|format(ratio.value) }}%
+                                                        {% else %}
+                                                          {{ "%.2f"|format(ratio.value) }}
+                                                        {% endif %}
+                                                      {% else %}
+                                                        Not available
+                                                      {% endif %}
+                                                    </div>
                                                   </div>
                                                 {% endfor %}
                                               </div>
-                                            </div>
-                                          </div>
-                                        </p>
-                                      {% endfor %}
-                                    </p>
-                                  <!-- TEST -->
+
+                                              {# ---------- TREND VS PREVIOUS YEAR (Y0Y) ---------- #}
+                                              {% set trend_keys = [
+                                                'asset_growth_rate',
+                                                'equity_growth_rate',
+                                                'equity_ratio_trend',
+                                                'total_assets_trend',
+                                                'working_capital_trend',
+                                                'current_ratio_development',
+                                                'debt_to_equity_trend'
+                                              ] %}
+
+                                              <br>
+                                              <h2 class="section-header">Trend vs Previous Year</h2>
+                                              <div class="financial-ratio-row">
+                                                {% for key in trend_keys %}
+                                                  {% set ratio = year.get(key) %}
+                                                  <div class="financial-ratio-box">
+                                                    <span class="info-bubble">i</span>
+                                                    <span class="tooltip-text">
+                                                      {% if ratio %}
+                                                        {{ ratio.description }}
+                                                      {% else %}
+                                                        No description available for this indicator.
+                                                      {% endif %}
+                                                    </span>
+
+                                                    <div>
+                                                      <h5>{{ key.replace('_',' ').title() }}</h5>
+                                                    </div>
+
+                                                    <div class="ratio-value">
+                                                      {% if ratio and ratio.value is not none %}
+                                                        {% if ratio.is_percent %}
+                                                          {{ "%.2f"|format(ratio.value) }}%
+                                                        {% else %}
+                                                          {{ "%.2f"|format(ratio.value) }}
+                                                        {% endif %}
+                                                      {% elif ratio %}
+                                                        Not available
+                                                      {% else %}
+                                                        Not found
+                                                      {% endif %}
+                                                    </div>
+                                                  </div>
+                                                {% endfor %}
+                                              </div>
+
+                                              {# ---------- BALANCE SHEET ---------- #}
+                                              <br>
+                                              <h2 class="section-header">Balance Sheet</h2>
+                                              <br>
+
+                                              {% set assets_order = [
+                                                {'key':'fixed_assets', 'label':'Fixed assets', 'group':1},
+                                                {'key':'intangible_assets', 'label':'Intangible assets', 'group':2},
+                                                {'key':'tangible_assets', 'label':'Tangible assets', 'group':2},
+                                                {'key':'financial_assets', 'label':'Financial assets', 'group':2},
+                                                {'key':'current_assets', 'label':'Current assets', 'group':1},
+                                                {'key':'inventories', 'label':'Inventories', 'group':2},
+                                                {'key':'receivables', 'label':'Receivables', 'group':2},
+                                                {'key':'securities', 'label':'Securities / short-term financial assets', 'group':2},
+                                                {'key':'cash_and_bank_balances', 'label':'Cash & bank balances', 'group':2},
+                                                {'key':'prepaid_expenses', 'label':'Prepaid expenses & deferred charges', 'group':1},
+                                                {'key':'deferred_tax_assets', 'label':'Deferred tax assets', 'group':1}
+                                              ] %}
+
+                                              <div class="asset-row">
+                                                <h4 class="asset-label-h4">Assets
+                                                  <span class="asset-value-2">
+                                                    {{ "{:,.2f}".format(year.total_assets).replace(",", " ").replace(".", ",") }}
+                                                  </span>
+                                                </h4>
+                                              </div>
+
+                                              <br>
+
+                                              {% for item in assets_order %}
+                                                {% set raw_value = year[item.key] if item.key in year else 0 %}
+                                                {% set value = raw_value if raw_value is not none else 0 %}
+                                                <div class="asset-row">
+                                                  {% if item.group == 1 %}
+                                                    <h5 class="asset-label-h5">{{ item.label }}</h5>
+                                                  {% else %}
+                                                    <h6 class="asset-label-h6">{{ item.label }}</h6>
+                                                  {% endif %}
+                                                  <span class="asset-value">
+                                                    {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
+                                                  </span>
+                                                </div>
+                                              {% endfor %}
+
+                                              <br><br>
+
+                                              {% set liabilities_order = [
+                                                {'key':'equity', 'label':'Equity', 'group':1},
+                                                {'key':'share_capital', 'label':'Share capital', 'group':2},
+                                                {'key':'share_capital_subitem', 'label':'Share capital subitem', 'group':3},
+                                                {'key':'share_capital_subitem_detail', 'label':'Share capital subitem detail', 'group':3},
+                                                {'key':'capital_reserves', 'label':'Capital reserves', 'group':2},
+                                                {'key':'revenue_reserves', 'label':'Revenue reserves', 'group':2},
+                                                {'key':'retained_earnings', 'label':'Retained earnings / net loss', 'group':2},
+                                                {'key':'retained_earnings_subitem', 'label':'Retained earnings subitem', 'group':3},
+                                                {'key':'liabilities', 'label':'Liabilities', 'group':1},
+                                                {'key':'deferred_income', 'label':'Deferred income / accrued liabilities', 'group':1},
+                                                {'key':'deferred_tax_liabilities', 'label':'Deferred tax liabilities', 'group':1}
+                                              ] %}
+
+                                              <h4 class="asset-label-h4">Liabilities & Equity
+                                                <span class="asset-value-2">
+                                                  {{ "{:,.2f}".format(year.total_liabilities).replace(",", " ").replace(".", ",") }}
+                                                </span>
+                                              </h4>
+
+                                              <br>
+
+                                              {% for item in liabilities_order %}
+                                                {% set raw_value = year[item.key] if item.key in year else 0 %}
+                                                {% set value = raw_value if raw_value is not none else 0 %}
+                                                <div class="asset-row">
+                                                  {% if item.group == 1 %}
+                                                    <h5 class="asset-label-h5">{{ item.label }}</h5>
+                                                  {% elif item.group == 2 %}
+                                                    <h6 class="asset-label-h6">{{ item.label }}</h6>
+                                                  {% else %}
+                                                    <h6 class="asset-label-h7">{{ item.label }}</h6>
+                                                  {% endif %}
+                                                  <span class="asset-value">
+                                                    {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
+                                                  </span>
+                                                </div>
+                                              {% endfor %}
+
+                                            </div>  {# card-body #}
+                                          </div>    {# collapse #}
+                                        </div>      {# collapse-block #}
+                                      </div>        {# d-inline-flex #}
+                                    {% endfor %}
+
                                   {% else %}
-                                    Unknown
+                                    <p>Unknown</p>
                                   {% endif %}
+
                                 </div>
                               </div>
                             </div>
                           </div>
-
-
-
                         </div>
                       </div>
                     </div>
                   </li>
+
+
 
                   <!-- History -->
                   <li>
                     <div>
                       <div class="thumb">
-                        <div class="row" style="margin-top:35px ;">
+                        <div class="row" style="margin-top:35px;">
                           <div class="col-lg-12">
                             <div class="description">
                               <div class="row">
@@ -455,7 +599,6 @@
                               </div>
                             </div>
                           </div>
-
                         </div>
                       </div>
                     </div>
@@ -489,4 +632,3 @@
 {% endif %}
 
 {% endblock %}
-
