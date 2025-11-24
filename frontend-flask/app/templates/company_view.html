@@ -168,12 +168,14 @@
                                       'debt_to_equity_trend'
                                     ] %}
 
+                                    
                                     <div class="financial-ratio-row">
                                       {% for key in trend_keys %}
                                         {% set ratio = overview_trend.get(key) %}
                                         {% set value = ratio.value if ratio else None %}
                                         {% set css = "" %}
 
+                                        <!-- Colors for Trend indicators-->
                                         {% if value is not none %}
                                           {% if ratio.is_percent %}
                                             {% if value < 0 %}
@@ -264,6 +266,7 @@
                                       {% set ind = compliance_overview.get(key) %}
                                       {% set css = "" %}
 
+                                      <!-- Colors for Compliance indicators-->
                                       {% if ind and ind.value is not none %}
                                         {% set val = ind.value %}
 
