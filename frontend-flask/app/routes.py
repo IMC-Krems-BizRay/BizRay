@@ -501,13 +501,21 @@ def view_company(fnr):
         max_delay = None
         late_freq = None
 
-    if years_end:
-        first_year_end = min(years_end)
-        last_year_end = max(years_end)
+        # --- Missing reporting years: only infer if we can detect a real gap ---
+    if years_end and len(set(years_end)) > 1:
+        years_sorted = sorted(set(years_end))
+        first_year_end = years_sorted[0]
+        last_year_end = years_sorted[-1]
+
         expected_years = last_year_end - first_year_end + 1
-        reported_years = len(set(years_end))
-        missing_years = max(expected_years - reported_years, 0)
+        reported_years = len(years_sorted)
+
+        gap = expected_years - reported_years
+
+        # Only trust the value if the gap is clearly > 0
+        missing_years = gap if gap > 0 else 0
     else:
+        # We cannot know — not enough information
         missing_years = None
 
     compliance_overview["avg_filing_delay"] = {
