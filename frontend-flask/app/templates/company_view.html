@@ -112,35 +112,103 @@
                                   </div>
 
                                   <div class="financial-ratio-row">
-                                    {% for key, ratio in latest_year.items() if key in [
-                                      'working_capital',
-                                      'debt_to_equity_ratio',
-                                      'equity_ratio',
-                                      'cash_ratio',
-                                      'quick_ratio',
-                                      'current_ratio',
-                                      'fixed_asset_coverage'
-                                    ] %}
-                                      <div class="financial-ratio-box">
-                                        <span class="info-bubble">i</span>
-                                        <span class="tooltip-text">{{ ratio.description }}</span>
-                                        <div>
-                                          <h5>{{ key.replace('_',' ').title() }}</h5>
-                                        </div>
-                                        <div class="ratio-value">
-                                          {% if ratio.value is not none %}
-                                            {% if ratio.is_percent %}
-                                              {{ "%.2f"|format(ratio.value) }}%
-                                            {% else %}
-                                              {{ "%.2f"|format(ratio.value) }}
-                                            {% endif %}
-                                          {% else %}
-                                            Not available
-                                          {% endif %}
-                                        </div>
+                                  {% for key, ratio in latest_year.items() if key in [
+                                    'working_capital',
+                                    'debt_to_equity_ratio',
+                                    'equity_ratio',
+                                    'cash_ratio',
+                                    'quick_ratio',
+                                    'current_ratio',
+                                    'fixed_asset_coverage'
+                                  ] %}
+
+                                    {# ----- decide colour class per indicator (overview only) ----- #}
+                                    {% set css = "" %}
+                                    {% if ratio.value is not none %}
+                                      {% set v = ratio.value %}
+
+                                      {# Debt to Equity ratio: <1 green, 1–2 yellow, >2 red  #}
+                                      {% if key == 'debt_to_equity_ratio' %}
+                                        {% if v < 1 %}
+                                          {% set css = "risk-low" %}
+                                        {% elif v <= 2 %}
+                                          {% set css = "risk-medium" %}
+                                        {% else %}
+                                          {% set css = "risk-high" %}
+                                        {% endif %}
+
+                                      {# Equity ratio (%): <25 red, 25–50 yellow, >50 green  #}
+                                      {% elif key == 'equity_ratio' %}
+                                        {% if v < 25 %}
+                                          {% set css = "risk-high" %}
+                                        {% elif v <= 50 %}
+                                          {% set css = "risk-medium" %}
+                                        {% else %}
+                                          {% set css = "risk-low" %}
+                                        {% endif %}
+
+                                      {# Current ratio: <1 red, 1–2 yellow, >2 green  #}
+                                      {% elif key == 'current_ratio' %}
+                                        {% if v < 1 %}
+                                          {% set css = "risk-high" %}
+                                        {% elif v <= 2 %}
+                                          {% set css = "risk-medium" %}
+                                        {% else %}
+                                          {% set css = "risk-low" %}
+                                        {% endif %}
+
+                                      {# Quick ratio: <0.5 red, 0.5–1 yellow, >1 green  #}
+                                      {% elif key == 'quick_ratio' %}
+                                        {% if v < 0.5 %}
+                                          {% set css = "risk-high" %}
+                                        {% elif v <= 1 %}
+                                          {% set css = "risk-medium" %}
+                                        {% else %}
+                                          {% set css = "risk-low" %}
+                                        {% endif %}
+
+                                      {# Cash ratio: <0.2 red, 0.2–1 yellow, >1 green  #}
+                                      {% elif key == 'cash_ratio' %}
+                                        {% if v < 0.2 %}
+                                          {% set css = "risk-high" %}
+                                        {% elif v <= 1 %}
+                                          {% set css = "risk-medium" %}
+                                        {% else %}
+                                          {% set css = "risk-low" %}
+                                        {% endif %}
+
+                                      {# Fixed asset coverage: >1 green, <=1 yellow (no red)  #}
+                                      {% elif key == 'fixed_asset_coverage' %}
+                                        {% if v > 1 %}
+                                          {% set css = "risk-low" %}
+                                        {% else %}
+                                          {% set css = "risk-medium" %}
+                                        {% endif %}
+                                      {% endif %}
+                                      {# working_capital stays neutral (no css) #}
+                                    {% endif %}
+
+                                    <div class="financial-ratio-box {{ css }}">
+                                      <span class="info-bubble">i</span>
+                                      <span class="tooltip-text">{{ ratio.description }}</span>
+                                      <div>
+                                        <h5>{{ key.replace('_',' ').title() }}</h5>
                                       </div>
-                                    {% endfor %}
-                                  </div>
+                                      <div class="ratio-value">
+                                        {% if ratio.value is not none %}
+                                          {% if ratio.is_percent %}
+                                            {{ "%.2f"|format(ratio.value) }}%
+                                          {% else %}
+                                            {{ "%.2f"|format(ratio.value) }}
+                                          {% endif %}
+                                        {% else %}
+                                          Not available
+                                        {% endif %}
+                                      </div>
+                                    </div>
+                                  {% endfor %}
+                                </div>
+
 
                                   {# ---------- Trend Indicators (Overall Period) ---------- #}
                                   {% if company.financial|length > 1 and overview_trend %}
