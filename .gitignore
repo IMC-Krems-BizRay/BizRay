@@ -5,3 +5,6 @@ __pycache__/
 instance/
 .idea
 
+WebService-HVD
+*.pdf
+*.xml
