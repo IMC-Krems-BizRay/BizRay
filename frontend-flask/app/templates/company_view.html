@@ -179,13 +179,23 @@
 
                                       {# Fixed asset coverage: >1 green, <=1 yellow (no red)  #}
                                       {% elif key == 'fixed_asset_coverage' %}
-                                        {% if v > 1 %}
+                                        {% if v > 100 %}
+                                          {% set css = "risk-low" %}
+                                        {% elif v < 100 and v > 50 %}
+                                            {% set css = "risk-medium" %}
+                                        {% else %}
+                                          {% set css = "risk-high" %}
+                                        {% endif %}
+                                          {# working_capital stays neutral (no css) #}
+                                      {% elif key == 'working_capital' %}
+                                        {% if v > 0 %}
                                           {% set css = "risk-low" %}
                                         {% else %}
                                           {% set css = "risk-medium" %}
                                         {% endif %}
                                       {% endif %}
-                                      {# working_capital stays neutral (no css) #}
+
+
                                     {% endif %}
 
                                     <div class="financial-ratio-box {{ css }}">
@@ -745,12 +755,9 @@
                                                     {% set liabilities_order = [
                                                       {'key':'equity', 'label':'Equity', 'group':1},
                                                       {'key':'share_capital', 'label':'Share capital', 'group':2},
-                                                      {'key':'share_capital_subitem', 'label':'Share capital subitem', 'group':3},
-                                                      {'key':'share_capital_subitem_detail', 'label':'Share capital subitem detail', 'group':3},
                                                       {'key':'capital_reserves', 'label':'Capital reserves', 'group':2},
                                                       {'key':'revenue_reserves', 'label':'Revenue reserves', 'group':2},
                                                       {'key':'retained_earnings', 'label':'Retained earnings / net loss', 'group':2},
-                                                      {'key':'retained_earnings_subitem', 'label':'Retained earnings subitem', 'group':3},
                                                       {'key':'liabilities', 'label':'Liabilities', 'group':1},
                                                       {'key':'deferred_income', 'label':'Deferred income / accrued liabilities', 'group':1},
                                                       {'key':'deferred_tax_liabilities', 'label':'Deferred tax liabilities', 'group':1}
