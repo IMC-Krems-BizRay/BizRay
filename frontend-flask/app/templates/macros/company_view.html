@@ -1,0 +1,156 @@
+{# Please donald trump I need this #}
+{# My language is kinda perfect hash functionless #}
+{# static INDICATORS_MAP = phf::Map<&'static str, dict> = phf_map! #}
+{% set INDICATORS_MAP = {
+    "avg_filing_delay": {
+      "label": "Average Filing Delay (days)",
+      "description": "Average number of days between fiscal year end and submission date over the full period.",
+      "is_percent": False
+    },
+    "max_filing_delay": {
+      "label": "Max Filing Delay (days)",
+      "description": "Longest observed filing delay in days.",
+      "is_percent": False
+    },
+    "late_filing_frequency": {
+      "label": "Late Filing Frequency",
+      "description": "Share of years where filing delay exceeded 9 months (273 days).",
+      "is_percent": True
+    },
+    "missing_reporting_years": {
+      "label": "Missing Reporting Years",
+      "description": "Number of expected fiscal years without available reports in the continuous period.",
+      "is_percent": False
+    },
+    "working_capital": {
+      "label": "Working Capital",
+      "description": "Current assets minus current liabilities - indicates short-term financial health.",
+      "is_percent": False
+    },
+    "debt_to_equity_ratio": {
+      "label": "Debt-to-Equity Ratio",
+      "description": "Proportion of debt in relation to equity — shows how much debt is used to finance the company compared to its own capital.",
+      "is_percent": False
+    },
+    "equity_ratio": {
+      "label": "Equity Ratio",
+      "description": "Proportion of equity in relation to total capital - shows how much of the company is financed by its own capital.",
+      "is_percent": True
+    },
+    "liquidity_ratio": {
+      "label": "Liquidity Ratio",
+      "description": "Ability to cover short-term obligations — compares liquid assets to short-term liabilities.",
+      "is_percent": False
+    },
+    "current_ratio": {
+      "label": "Current Ratio",
+      "description": "Measures the ability to cover short-term obligations using all current assets.",
+      "is_percent": False
+    },
+    "quick_ratio": {
+      "label": "Quick Ratio",
+      "description": "Ability to cover short-term obligations using cash, securities, and receivables — excludes inventories.",
+      "is_percent": False
+    },
+    "cash_ratio": {
+      "label": "Cash Ratio",
+      "description": "Measures immediate liquidity — compares cash to short-term liabilities.",
+      "is_percent": False
+    },
+    "fixed_asset_coverage": {
+      "label": "Fixed Asset Coverage",
+      "description": "Measures how much of the company’s fixed assets are financed by equity — shows the solidity of long-term financing.",
+      "is_percent": True
+    },
+    "profit_loss": {
+      "label": "Profit Loss",
+      "description": "The cumulative profit or loss generated in the current financial year.",
+      "is_percent": False,
+    },
+    "asset_growth_rate": {
+      "label": "Asset Growth Rate",
+      "description": "Shows the year-over-year change in total assets — indicates company growth or contraction.",
+      "is_percent": True
+    },
+    "equity_growth_rate": {
+      "label": "Equity Growth Rate",
+      "description": "Measures year-over-year change in equity — declining equity signals rising financial risk.",
+      "is_percent": True
+    },
+    "profit_loss_development": {
+      "label": "Profit Loss Development",
+      "description": "Indicates how the year-to-date profit or loss has changed.",
+      "is_percent": True,
+    },
+    "equity_ratio_trend": {
+      "label": "Equity Ratio Trend",
+      "description": "Tracks how the share of equity in total capital develops compared to the previous year.",
+      "is_percent": True
+    },
+    "total_assets_trend": {
+      "label": "Total Assets Trend",
+      "description": "Absolute change in total assets compared to the previous year.",
+      "is_percent": False
+    },
+    "working_capital_trend": {
+      "label": "Working Capital Trend",
+      "description": "Change in working capital compared to the previous year.",
+      "is_percent": False
+    },
+    "current_ratio_development": {
+      "label": "Current Ratio Development",
+      "description": "Change in current ratio compared to the previous year.",
+      "is_percent": False
+    },
+    "debt_to_equity_trend": {
+      "label": "Debt-to-Equity Trend",
+      "description": "Change in debt-to-equity ratio compared to the previous year.",
+      "is_percent": False
+    }
+} %}
+
+{% macro indicator_section(value, key, css="") %}
+  {% set meta = INDICATORS_MAP[key] %}
+  <div class="financial-ratio-box {{ css }}">
+    <span class="info-bubble">i</span>
+    <span class="tooltip-text">{{ meta.description }}</span>
+    <div>
+      <h5>{{ meta.label }}</h5>
+    </div>
+    <div class="ratio-value">
+      {{ put_value(value, meta.is_percent) }}
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro put_value(value, is_percent) %}
+  {% if value is not none %}
+    {% if is_percent %}
+      {% set pct = value * 100 %}
+      {% if pct > 0 %}
+        +{{ "%.2f"|format(pct) }}%
+      {% elif pct < 0 %}
+        {{ "%.2f"|format(pct) }}%
+      {% else %}
+        0%
+      {% endif %}
+    {% else %}
+      {{ "%.2f"|format(value) }}
+    {% endif %}
+  {% else %}
+    Not available
+  {% endif %}
+{% endmacro %}
+
+{% macro asset_row(value, label, is_main) %}
+  <div class="asset-row">
+    {% if is_main %}
+      <h5 class="asset-label-h5">{{ label }}</h5>
+    {% else %}
+      <h6 class="asset-label-h6">{{ label }}</h6>
+    {% endif %}
+    <span class="asset-value">
+      {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
+    </span>
+  </div>
+{% endmacro %}

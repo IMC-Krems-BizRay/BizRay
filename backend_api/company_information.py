@@ -101,7 +101,7 @@ def extract_company_data(info):
             },
             ...
         ],
-        risk_indicators: {
+        compliance_indicators: {
             filling_delay: int[](days)
             late_filling_frequency: null | float(0.0-1.0)
             missing_reporting_years: int
@@ -112,20 +112,16 @@ def extract_company_data(info):
     history = extract_company_history(info)
 
     doc_ids, total_reports = get_doc_ids(info.FNR)
-    financial = [get_document_data(id) for id in doc_ids[:3]]  # limit to 3 last reports
+    financial = [get_document_data(id) for id in doc_ids[-3:]]  # limit to 3 last reports
+    calculate_financial_indicators(financial)
 
-    filling_delays = [filling_delay(sheet) for sheet in financial]
-    if filling_delays:
-                                                                            # approximately 9 months
-        late_filling_frequency = sum(1 for delay in filling_delays if delay > 273) / len(filling_delays)
-    else:
-        late_filling_frequency = None
+    compliance_indicators = extract_compliance_indicators(financial, history, total_reports)
 
-    # the first history event is always a company creation
-    first_year = history[0]['filed_date'].year
-    expected_reports = date.today().year - first_year
-    missing_reporting_years = expected_reports - total_reports
-
+    # 'financial': {
+    #     'yearly': {
+    #
+    #     }
+    # }
     data = {
         'basic_info': {
             'company_name': info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0] if info.FIRMA.FI_DKZ02 else None,
@@ -137,14 +133,89 @@ def extract_company_data(info):
         'management': extract_management_info(info),
         'financial': financial,
         'history': history,
-        'risk_indicators': {
-            'filling_delay': filling_delays,
-            'late_filling_frequency': late_filling_frequency,
-            'missing_reporting_years': missing_reporting_years
-        }
+        'compliance_indicators': compliance_indicators
     }
 
     return data
+
+def calculate_financial_indicators(financial_years):
+    """
+    Mutates the passed in list by appending additional data to it
+    """
+    for year in financial_years:
+        divide_or_none = lambda numerator, denominator: year[numerator] / year[denominator] if year[denominator] else None
+
+        year["working_capital"] = year["current_assets"] - year["deferred_income"]
+        year["debt_to_equity_ratio"] = divide_or_none("liabilities", "equity")
+        year["equity_ratio"] = divide_or_none("equity", "total_liabilities") # wrong
+
+        year["quick_assets"] = year["cash_and_bank_balances"] + year["securities"] + year["receivables"]
+        year["current_ratio"] = divide_or_none("current_assets", "deferred_income")
+        year["cash_ratio"] = divide_or_none("cash_and_bank_balances", "deferred_income")
+        year["quick_ratio"] = divide_or_none("quick_assets", "deferred_income")
+
+        year["fixed_asset_coverage"] = divide_or_none("equity", "fixed_assets")
+
+        year["profit_loss"] = year["retained_earnings"] - year["retained_earnings_subitem"]
+
+    for prev, curr in zip(financial_years, financial_years[1:]):
+        def growth_rate_or_none(metric):
+            if not prev[metric] or curr[metric] is None:
+                return None
+            return (curr[metric] - prev[metric]) / prev[metric]
+
+        curr["asset_growth_rate"] = growth_rate_or_none("total_assets")
+        curr["equity_growth_rate"] = growth_rate_or_none("equity")
+        curr["profit_loss_development"] = growth_rate_or_none("profit_loss")
+
+        def trend_or_none(metric):
+            if prev[metric] is None or curr[metric] is None:
+                return None
+            return prev[metric] - curr[metric]
+
+        curr["equity_ratio_trend"] = trend_or_none("equity_ratio")
+        curr["total_assets_trend"] = trend_or_none("total_assets")
+        curr["working_capital_trend"] = trend_or_none("working_capital")
+        curr["current_ratio_development"] = trend_or_none("current_ratio")
+        curr["debt_to_equity_trend"] = trend_or_none("debt_to_equity_ratio")
+
+def extract_compliance_indicators(financial, history, total_reports):
+    filing_delays = []
+    for sheet in financial:
+        days = filing_delay(sheet)
+        filing_delays.append({
+            "fiscal_year": sheet["fiscal_year"],
+            "days": days,
+            # approximately 9 months
+            "is_late": days > 273
+        })
+
+    if filing_delays:
+        days = [year["days"] for year in filing_delays]
+        avg_filing_delay = sum(days) / len(days)
+        max_filing_delay = max(days)
+        late_filing_frequency = sum(fd["is_late"] for fd in filing_delays) / len(filing_delays)
+    else:
+        avg_filing_delay = None
+        max_filing_delay = None
+        late_filing_frequency = None
+
+    # top 10 epic gamer fornite moments
+    is_deleted = "löschung" in history[-1]['event'].lower()
+    # the first history event is always a company creation
+    first_year = history[0]['event_date'].year
+    last_year = history[-1]['event_date'].year if is_deleted else date.today().year
+    expected_reports = last_year - first_year
+    missing_reporting_years = expected_reports - total_reports
+
+    return {
+        'filing_delays': filing_delays,
+        'avg_filing_delay': avg_filing_delay,
+        'max_filing_delay': max_filing_delay,
+        'late_filing_frequency': late_filing_frequency,
+        'missing_reporting_years': missing_reporting_years
+    }
+
 
 def extract_location_info(info):
     if not info.FIRMA.FI_DKZ03:
@@ -254,7 +325,8 @@ def get_document_data(id):
     def search_balance(term):
         node = balance.find(f".//ns0:{term}/ns0:POSTENZEILE/ns0:BETRAG", ns)
         if node is None:
-            return None
+            # Probably wrong but calculations require it.
+            return 0.0
 
         return float(node.text)
 
@@ -318,12 +390,6 @@ def get_doc_ids(fnr) -> tuple[list[str], int]:
     # The results are divided into 2 sections: PDF and XML
     # Sections are ordered by date from oldest to latest
     # PDFs come first, XMLs come afterwards
-    # By reversing this list we can receive latest XMLs first
-    # There is always a PDF alternative to the XML, but not the opposite
-    # That's why it's important to also account for PDF documents to calculate
-    # The total number of reports
-    results.reverse()
-    # print(results)
 
     # Example .KEY: '435836_5690342302057_000___000_30_30137347_XML'
     #               '435836_5690342302057_000__  _000 _30 _30137347_XML'
@@ -339,19 +405,19 @@ def get_doc_ids(fnr) -> tuple[list[str], int]:
         if result.DOKUMENTART.TEXT != "Jahresabschluss":
             continue
 
-        AZ = result.KEY[7:20]
-        if AZ in keys:
-            continue
-
-        keys.add(AZ)
-        total_years += 1
         if result.KEY.endswith("XML"):
             doc_ids.append(result.KEY)
+
+        AZ = result.KEY[7:20]
+        if AZ not in keys:
+            keys.add(AZ)
+            total_years += 1
+
 
     return doc_ids, total_years
 
 
-def filling_delay(sheet) -> int:
+def filing_delay(sheet) -> int:
     submission = datetime.strptime(sheet['submission_date'], "%Y-%m-%d")
     year_end = datetime.strptime(sheet['fiscal_year']['end'], "%Y-%m-%d")
 

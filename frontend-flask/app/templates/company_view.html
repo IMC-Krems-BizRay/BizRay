@@ -1,226 +1,221 @@
+{% import "macros/company_view.html" as macros %}
 {% extends "base.html" %}
 {% block title %}Company – {{ company.basic_info.company_name or 'Details' }}{% endblock %}
 
 {% block content %}
+  <div id="company-page" class="{% if locked %}content-blurred{% endif %}">
 
-<div id="company-page" class="{% if locked %}content-blurred{% endif %}">
+    {% block extra_head %}
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    {% endblock %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-{% endblock %}
-
-<!-- Hero heading (same component used by category.html) -->
-<div class="page-heading">
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-10">
-        <div class="top-text header-text">
-          <h6>Company details</h6>
-          <h2>{{ company.basic_info.company_name }}</h2>
+    <!-- Hero heading (same component used by category.html) -->
+    <div class="page-heading">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-10">
+            <div class="top-text header-text">
+              <h6>Company details</h6>
+              <h2>{{ company.basic_info.company_name }}</h2>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- Tabs (use the naccs markup from category.html) -->
-<div class="category-post">
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-12">
+    <!-- Tabs (use the naccs markup from category.html) -->
+    <div class="category-post">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-12">
 
-        <div class="naccs">
-          <div class="grid">
-            <div class="row">
-              <div class="col-lg-12">
-                <!-- MENU -->
-                <div class="menu">
-                  <div class="first-thumb active">
-                    <div class="thumb">
+            <div class="naccs">
+              <div class="grid">
+                <div class="row">
+                  <div class="col-lg-12">
+                    <!-- MENU -->
+                    <div class="menu">
+                      <div class="first-thumb active">
+                        <div class="thumb">
                       <span class="icon">
-                        <img src="{{ url_for('static', filename='img/overview-icon.png') }}" style="max-width: 75%;height: auto;" alt="">
+                        <img src="{{ url_for('static', filename='img/overview-icon.png') }}"
+                             style="max-width: 75%;height: auto;" alt="">
                         <h4>Overview</h4>
                       </span>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="thumb">
+                        </div>
+                      </div>
+                      <div>
+                        <div class="thumb">
                       <span class="icon">
-                        <img src="{{ url_for('static', filename='img/location-icon.png') }}" style="max-width: 75%;height: auto;" alt="">
+                        <img src="{{ url_for('static', filename='img/location-icon.png') }}"
+                             style="max-width: 75%;height: auto;" alt="">
                         <h4>Location</h4>
                       </span>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="thumb">
+                        </div>
+                      </div>
+                      <div>
+                        <div class="thumb">
                       <span class="icon">
-                        <img src="{{ url_for('static', filename='img/management-icon.png') }}" style="max-width: 95%;height: auto;" alt="">
+                        <img src="{{ url_for('static', filename='img/management-icon.png') }}"
+                             style="max-width: 95%;height: auto;" alt="">
                         <h4>Management</h4>
                       </span>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="thumb">
+                        </div>
+                      </div>
+                      <div>
+                        <div class="thumb">
                       <span class="icon">
-                        <img src="{{ url_for('static', filename='img/financial-icon.png') }}" style="max-width: 100%;height: auto;" alt="">
+                        <img src="{{ url_for('static', filename='img/financial-icon.png') }}"
+                             style="max-width: 100%;height: auto;" alt="">
                         <h4>Financial</h4>
                       </span>
-                    </div>
-                  </div>
-                  <div class="last-thumb">
-                    <div class="thumb">
+                        </div>
+                      </div>
+                      <div class="last-thumb">
+                        <div class="thumb">
                       <span class="icon">
-                        <img src="{{ url_for('static', filename='img/history-icon.jpg') }}" style="max-width: 65%;height: auto;" alt="">
+                        <img src="{{ url_for('static', filename='img/history-icon.jpg') }}"
+                             style="max-width: 65%;height: auto;" alt="">
                         <h4>History</h4>
                       </span>
+                        </div>
+                      </div>
                     </div>
+                    <!-- /MENU -->
                   </div>
-                </div>
-                <!-- /MENU -->
-              </div>
 
-              <div class="col-lg-12">
-                <!-- PANES -->
-                <ul class="nacc">
-                  <!-- Overview -->
-                  <li class="active">
-                    <div>
-                      <div class="thumb">
-                        <div class="row" style="margin-top:35px;">
-                          <div class="col-lg-12">
-                            <div class="description">
-                              <div class="row">
-                                <div class="col-lg-12">
-                                  <p><strong>Company Name:</strong> {{ company.basic_info.company_name }}</p>
-                                  <p><strong>Legal Form:</strong> {{ company.basic_info.legal_form }}</p>
-                                  <p><strong>Company Number:</strong> {{ company.basic_info.company_number }}</p>
-                                  <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
-                                </div>
+                  <div class="col-lg-12">
+                    <!-- PANES -->
+                    <ul class="nacc">
+                      <!-- Overview -->
+                      <li class="active">
+                        <div>
+                          <div class="thumb">
+                            <div class="row" style="margin-top:35px;">
+                              <div class="col-lg-12">
+                                <div class="description">
+                                  <div class="row">
+                                    <div class="col-lg-12">
+                                      <p><strong>Company Name:</strong> {{ company.basic_info.company_name }}</p>
+                                      <p><strong>Legal Form:</strong> {{ company.basic_info.legal_form }}</p>
+                                      <p><strong>Company Number:</strong> {{ company.basic_info.company_number }}</p>
+                                      <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
+                                    </div>
 
-                                {# ---------- Financial indicators (latest year) ---------- #}
-                                {% if company.financial | length > 0 %}
-                                  {% set latest_year = company.financial[-1] %}
-                                  <div>
-                                    <h2 class="section-header">
-                                      Financial Risk Indicators -
-                                      {% if latest_year.fiscal_year.start[:4] == latest_year.fiscal_year.end[:4] %}
-                                        {{ latest_year.fiscal_year.start[:4] }}
-                                      {% else %}
-                                        {{ latest_year.fiscal_year.start[:4] }} / {{ latest_year.fiscal_year.end[:4] }}
-                                      {% endif %}
-                                    </h2>
-                                  </div>
-
-                                  <div class="financial-ratio-row">
-                                  {% for key, ratio in latest_year.items() if key in [
-                                    'working_capital',
-                                    'debt_to_equity_ratio',
-                                    'equity_ratio',
-                                    'cash_ratio',
-                                    'quick_ratio',
-                                    'current_ratio',
-                                    'fixed_asset_coverage'
-                                  ] %}
-
-                                    {# ----- decide colour class per indicator (overview only) ----- #}
-                                    {% set css = "" %}
-                                    {% if ratio.value is not none %}
-                                      {% set v = ratio.value %}
-
-                                      {# Debt to Equity ratio: <1 green, 1–2 yellow, >2 red  #}
-                                      {% if key == 'debt_to_equity_ratio' %}
-                                        {% if v < 1 %}
-                                          {% set css = "risk-low" %}
-                                        {% elif v <= 2 %}
-                                          {% set css = "risk-medium" %}
-                                        {% else %}
-                                          {% set css = "risk-high" %}
-                                        {% endif %}
-
-                                      {# Equity ratio (%): <25 red, 25–50 yellow, >50 green  #}
-                                      {% elif key == 'equity_ratio' %}
-                                        {% if v < 25 %}
-                                          {% set css = "risk-high" %}
-                                        {% elif v <= 50 %}
-                                          {% set css = "risk-medium" %}
-                                        {% else %}
-                                          {% set css = "risk-low" %}
-                                        {% endif %}
-
-                                      {# Current ratio: <1 red, 1–2 yellow, >2 green  #}
-                                      {% elif key == 'current_ratio' %}
-                                        {% if v < 1 %}
-                                          {% set css = "risk-high" %}
-                                        {% elif v <= 2 %}
-                                          {% set css = "risk-medium" %}
-                                        {% else %}
-                                          {% set css = "risk-low" %}
-                                        {% endif %}
-
-                                      {# Quick ratio: <0.5 red, 0.5–1 yellow, >1 green  #}
-                                      {% elif key == 'quick_ratio' %}
-                                        {% if v < 0.5 %}
-                                          {% set css = "risk-high" %}
-                                        {% elif v <= 1 %}
-                                          {% set css = "risk-medium" %}
-                                        {% else %}
-                                          {% set css = "risk-low" %}
-                                        {% endif %}
-
-                                      {# Cash ratio: <0.2 red, 0.2–1 yellow, >1 green  #}
-                                      {% elif key == 'cash_ratio' %}
-                                        {% if v < 0.2 %}
-                                          {% set css = "risk-high" %}
-                                        {% elif v <= 1 %}
-                                          {% set css = "risk-medium" %}
-                                        {% else %}
-                                          {% set css = "risk-low" %}
-                                        {% endif %}
-
-                                      {# Fixed asset coverage: >1 green, <=1 yellow (no red)  #}
-                                      {% elif key == 'fixed_asset_coverage' %}
-                                        {% if v > 100 %}
-                                          {% set css = "risk-low" %}
-                                        {% elif v < 100 and v > 50 %}
-                                            {% set css = "risk-medium" %}
-                                        {% else %}
-                                          {% set css = "risk-high" %}
-                                        {% endif %}
-                                          {# working_capital stays neutral (no css) #}
-                                      {% elif key == 'working_capital' %}
-                                        {% if v > 0 %}
-                                          {% set css = "risk-low" %}
-                                        {% else %}
-                                          {% set css = "risk-medium" %}
-                                        {% endif %}
-                                      {% endif %}
-
-
-                                    {% endif %}
-
-                                    <div class="financial-ratio-box {{ css }}">
-                                      <span class="info-bubble">i</span>
-                                      <span class="tooltip-text">{{ ratio.description }}</span>
+                                    {# ---------- Financial indicators (latest year) ---------- #}
+                                    {% if company.financial | length > 0 %}
+                                      {% set latest_year = company.financial[-1] %}
                                       <div>
-                                        <h5>{{ key.replace('_',' ').title() }}</h5>
-                                      </div>
-                                      <div class="ratio-value">
-                                        {% if ratio.value is not none %}
-                                          {% if ratio.is_percent %}
-                                            {{ "%.2f"|format(ratio.value) }}%
+                                        <h2 class="section-header">
+                                          Financial Risk Indicators -
+                                          {% if latest_year.fiscal_year.start[:4] == latest_year.fiscal_year.end[:4] %}
+                                            {{ latest_year.fiscal_year.start[:4] }}
                                           {% else %}
-                                            {{ "%.2f"|format(ratio.value) }}
+                                            {{ latest_year.fiscal_year.start[:4] }} /
+                                            {{ latest_year.fiscal_year.end[:4] }}
+                                          {% endif %}
+                                        </h2>
+                                      </div>
+
+                                      <div class="financial-ratio-row">
+                                        {% set css = "" %}
+
+                                        {% set value = latest_year["working_capital"] %}
+                                        {% if value > 0 %}
+                                          {% set css = "risk-low" %}
+                                        {% else %}
+                                          {% set css = "risk-medium" %}
+                                        {% endif %}
+                                        {{ macros.indicator_section(value, "working_capital", css) }}
+
+
+                                        {% set value = latest_year["debt_to_equity_ratio"] %}
+                                        {% if value < 1 %}
+                                          {% set css = "risk-low" %}
+                                        {% elif value <= 2 %}
+                                          {% set css = "risk-medium" %}
+                                        {% else %}
+                                          {% set css = "risk-high" %}
+                                        {% endif %}
+                                        {{ macros.indicator_section(value, "debt_to_equity_ratio", css) }}
+
+
+                                        {% set value = latest_year["equity_ratio"] %}
+                                        {% if value is not none %}
+                                          {% if value < 25 %}
+                                            {% set css = "risk-high" %}
+                                          {% elif value <= 50 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-low" %}
                                           {% endif %}
                                         {% else %}
-                                          Not available
+                                          {% set css = "" %}
                                         {% endif %}
+                                        {{ macros.indicator_section(value, "equity_ratio", css) }}
+
+
+                                        {% set value = latest_year["current_ratio"] %}
+                                        {% if value is not none %}
+                                          {% if value < 1 %}
+                                            {% set css = "risk-high" %}
+                                          {% elif value <= 2 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-low" %}
+                                          {% endif %}
+                                        {% else %}
+                                          {% set css = "" %}
+                                        {% endif %}
+                                        {{ macros.indicator_section(value, "current_ratio", css) }}
+
+
+                                        {% set value = latest_year["quick_ratio"] %}
+                                        {% if value is not none %}
+                                          {% if value < 0.5 %}
+                                            {% set css = "risk-high" %}
+                                          {% elif value <= 1 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-low" %}
+                                          {% endif %}
+                                        {% else %}
+                                          {% set css = "" %}
+                                        {% endif %}
+                                        {{ macros.indicator_section(value, "quick_ratio", css) }}
+
+
+                                        {% set value = latest_year["cash_ratio"] %}
+                                        {% if value is not none %}
+                                          {% if value < 0.2 %}
+                                            {% set css = "risk-high" %}
+                                          {% elif value <= 1 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-low" %}
+                                          {% endif %}
+                                        {% else %}
+                                          {% set css = "" %}
+                                        {% endif %}
+                                        {{ macros.indicator_section(value, "cash_ratio", css) }}
+
+
+                                        {% set value = latest_year["fixed_asset_coverage"] %}
+                                        {% if value is not none %}
+                                          {% if value > 100 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif value > 50 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-high" %}
+                                          {% endif %}
+                                        {% else %}
+                                          {% set css = "" %}
+                                        {% endif %}
+                                        {{ macros.indicator_section(value, "fixed_asset_coverage", css) }}
                                       </div>
-                                    </div>
-                                  {% endfor %}
-                                </div>
-
-
-                                  {# ---------- Trend Indicators (Overall Period) ---------- #}
+                                      {#
+                                  <!-- ---------- Trend Indicators (Overall Period) ---------- -->
                                   {% if company.financial|length > 1 and overview_trend %}
                                     {% set first_year = company.financial[0].fiscal_year %}
                                     {% set last_year  = company.financial[-1].fiscal_year %}
@@ -318,553 +313,419 @@
                                   {% endif %}
 
                                 {% else %}
-                                  {# No financial data at all #}
+                                  <!-- No financial data at all -->
                                   <h2 class="section-header">Financial Risk Indicators</h2>
                                   <p style="padding-left:20px; color:#777;">No financial data available.</p>
 
                                   <h2 class="section-header">Trend Indicators (Overall Period)</h2>
                                   <p style="padding-left:20px; color:#777;">No trend data available.</p>
                                 {% endif %}
+                                #}
 
-                                {# ---------- Compliance Indicators (Overall Period) ---------- #}
-                                {% if compliance_overview and company.financial|length > 0 %}
-                                  {% set first_year = company.financial[0].fiscal_year %}
-                                  {% set last_year  = company.financial[-1].fiscal_year %}
-
-                                  <div>
-                                    <h2 class="section-header">
-                                      Compliance Indicators (Overall Period) -
-                                      {% if first_year.start[:4] == last_year.end[:4] %}
-                                        {{ first_year.start[:4] }}
-                                      {% else %}
-                                        {{ first_year.start[:4] }} / {{ last_year.end[:4] }}
-                                      {% endif %}
-                                    </h2>
-                                  </div>
-
-                                  {% set comp_keys = [
-                                    'avg_filing_delay',
-                                    'max_filing_delay',
-                                    'late_filing_frequency',
-                                    'missing_reporting_years'
-                                  ] %}
-
-                                  <div class="financial-ratio-row">
-                                    {% for key in comp_keys %}
-                                      {% set ind = compliance_overview.get(key) %}
-                                      {% set css = "" %}
-
-                                      <!-- Colors for Compliance indicators-->
-                                      {% if ind and ind.value is not none %}
-                                        {% set val = ind.value %}
-
-                                        {% if key == 'avg_filing_delay' %}
-                                          {% if val <= 90 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif val <= 273 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-high" %}
-                                          {% endif %}
-
-                                        {% elif key == 'max_filing_delay' %}
-                                          {% if val <= 180 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif val <= 273 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-high" %}
-                                          {% endif %}
-
-                                        {% elif key == 'late_filing_frequency' %}
-                                          {% if val < 20 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif val <= 50 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-high" %}
-                                          {% endif %}
-
-                                        {% elif key == 'missing_reporting_years' %}
-                                          {% if val == 0 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif val <= 2 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-high" %}
-                                          {% endif %}
-                                        {% endif %}
-                                      {% endif %}
-
-                                      <div class="financial-ratio-box {{ css }}">
-                                        <span class="info-bubble">i</span>
-                                        <span class="tooltip-text">
-                                          {% if ind %}
-                                            {{ ind.description }}
-                                          {% else %}
-                                            No description available for this indicator.
-                                          {% endif %}
-                                        </span>
+                                      {# ---------- Compliance Indicators (Overall Period) ---------- #}
+                                      {% if company.compliance_indicators %}
+                                        {% set first_year = company.financial[0].fiscal_year %}
+                                        {% set last_year  = company.financial[-1].fiscal_year %}
 
                                         <div>
-                                          <h5>
-                                            {% if ind and ind.label %}
-                                              {{ ind.label }}
+                                          <h2 class="section-header">
+                                            Compliance Indicators (Overall Period) -
+                                            {% if first_year.start[:4] == last_year.end[:4] %}
+                                              {{ first_year.start[:4] }}
                                             {% else %}
-                                              {{ key.replace('_',' ').title() }}
+                                              {{ first_year.start[:4] }} / {{ last_year.end[:4] }}
                                             {% endif %}
-                                          </h5>
+                                          </h2>
                                         </div>
 
-                                        <div class="ratio-value">
-                                          {% if ind and ind.value is not none %}
-                                            {% set val = ind.value %}
-                                            {% if ind.is_percent %}
-                                              {% if val > 0 %}
-                                                +{{ "%.2f"|format(val) }}%
-                                              {% elif val < 0 %}
-                                                {{ "%.2f"|format(val) }}%
-                                              {% else %}
-                                                0%
-                                              {% endif %}
-                                            {% else %}
-                                              {{ "%.0f"|format(val) }}
-                                            {% endif %}
-                                          {% elif ind %}
-                                            Not available
+                                        <div class="financial-ratio-row">
+                                          {% set css = "" %}
+                                          {% set value = company.compliance_indicators["avg_filing_delay"] %}
+
+                                          {% if value <= 90 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif value <= 273 %}
+                                            {% set css = "risk-medium" %}
                                           {% else %}
-                                            Not found
+                                            {% set css = "risk-high" %}
                                           {% endif %}
+                                          {# macro indicator_section(value, key, css="") #}
+                                          {{ macros.indicator_section(value, "avg_filing_delay", css) }}
+
+
+                                          {% set value = company.compliance_indicators["max_filing_delay"] %}
+                                          {% if value <= 180 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif value <= 273 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-high" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "max_filing_delay", css) }}
+
+
+                                          {% set value = company.compliance_indicators["late_filing_frequency"] %}
+                                          {% if value < 0.2 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif value <= 0.5 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-high" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "late_filing_frequency", css) }}
+
+
+                                          {% set value = company.compliance_indicators["missing_reporting_years"] %}
+                                          {% if value == 0 %}
+                                            {% set css = "risk-low" %}
+                                          {% elif value <= 2 %}
+                                            {% set css = "risk-medium" %}
+                                          {% else %}
+                                            {% set css = "risk-high" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "missing_reporting_years", css) }}
                                         </div>
-                                      </div>
-                                    {% endfor %}
+
+                                        {% if company.compliance_indicators.filing_delays %}
+                                          <div style="margin-top: 15px; padding-left: 20px;">
+                                            {% for fd in company.compliance_indicators.filing_delays %}
+                                              <div class="mb-2">
+                                                {# Build label from fiscal_year #}
+                                                {% set start_year = fd.fiscal_year.start[:4] %}
+                                                {% set end_year = fd.fiscal_year.end[:4] %}
+                                                {% set label = start_year ~ ' / ' ~ end_year if start_year != end_year else start_year %}
+
+                                                <strong>{{ label }}:</strong><br>
+
+                                                {% if fd.days is not none %}
+                                                  Filing delay: {{ fd.days|int }} days
+                                                  {% if fd.is_late %}
+                                                    <span class="badge bg-danger ms-1">Late (&gt; 9 months)</span>
+                                                  {% else %}
+                                                    <span class="badge bg-success ms-1">On time</span>
+                                                  {% endif %}
+                                                {% else %}
+                                                  Filing delay: Not available
+                                                {% endif %}
+                                              </div>
+                                            {% endfor %}
+                                          </div>
+                                        {% endif %}
+                                      {% else %}
+                                        <h2 class="section-header">Compliance Indicators (Overall Period)</h2>
+                                        <p style="padding-left:20px; color:#777;">No compliance data available.</p>
+                                      {% endif %}
+                                      {# ---------- Compliance end ---------- #}
+                                    {% endif %}
                                   </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
 
-                                  {% if compliance_years %}
-                                    <div style="margin-top: 15px; padding-left: 20px;">
-                                      {% for y in compliance_years %}
-                                        <div class="mb-2">
-                                          <strong>{{ y.label }}:</strong><br>
 
-                                          {% if y.delay_days is not none %}
-                                            Filing delay:
-                                            {{ y.delay_days|int }} days
-                                            {% if y.is_late %}
-                                              <span class="badge bg-danger ms-1">
-                                                Late (&gt; 9 months)
-                                              </span>
-                                            {% else %}
-                                              <span class="badge bg-success ms-1">
-                                                On time
-                                              </span>
-                                            {% endif %}
-                                          {% else %}
-                                            Filing delay: Not available
-                                          {% endif %}
-                                          <br>
+                      <!-- Location -->
+                      <li>
+                        <div>
+                          <div class="thumb">
+                            <div class="row" style="margin-top:35px;">
+                              <div class="col-lg-12">
+                                <div class="description">
+                                  <div class="row">
+                                    <div class="col-lg-12">
+                                      {% if company.location %}
+                                        {% set c3map = {
+                                          'AUT':'Austria',
+                                          'DEU':'Germany',
+                                          'CHE':'Switzerland',
+                                          'ITA':'Italy',
+                                          'SVK':'Slovakia',
+                                          'HUN':'Hungary',
+                                          'CZE':'Czechia'
+                                        } %}
+                                        {% set country_name = c3map.get(company.location.country, company.location.country) %}
 
-                                          Balance sheet:
-                                          {% if y.balance_sheet_available %}
-                                            <span class="badge bg-success ms-1">Available</span>
-                                          {% else %}
-                                            <span class="badge bg-warning text-dark ms-1">Not available</span>
-                                          {% endif %}
+                                        {% set address = (
+                                          (company.location.street ~ ' ' ~ company.location.house_number)|trim ~ ', ' ~
+                                          (company.location.postal_code ~ ' ' ~ company.location.city)|trim ~ ', ' ~
+                                          country_name
+                                        ) | trim %}
+
+                                        <p><strong>Address:</strong> {{ address }}</p>
+
+                                        <iframe
+                                          class="map-container"
+                                          style="border:0"
+                                          loading="lazy"
+                                          allowfullscreen
+                                          referrerpolicy="no-referrer-when-downgrade"
+                                          src="https://www.google.com/maps?q={{ address|urlencode }}&output=embed">
+                                        </iframe>
+
+                                        <div class="mt-2">
+                                          <a class="btn btn-light"
+                                             target="_blank"
+                                             href="https://www.google.com/maps/search/?api=1&query={{ address|urlencode }}">
+                                            Open in Google Maps
+                                          </a>
                                         </div>
-                                      {% endfor %}
+                                      {% else %}
+                                        <p><strong>Address:</strong> Unknown</p>
+                                      {% endif %}
                                     </div>
-                                  {% endif %}
-                                {% else %}
-                                  <h2 class="section-header">Compliance Indicators (Overall Period)</h2>
-                                  <p style="padding-left:20px; color:#777;">No compliance data available.</p>
-                                {% endif %}
-                                {# ---------- Compliance end ---------- #}
-
-
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-
-
-                  <!-- Location -->
-                  <li>
-                    <div>
-                      <div class="thumb">
-                        <div class="row" style="margin-top:35px;">
-                          <div class="col-lg-12">
-                            <div class="description">
-                              <div class="row">
-                                <div class="col-lg-12">
-                                  {% if company.location %}
-                                    {% set c3map = {
-                                      'AUT':'Austria',
-                                      'DEU':'Germany',
-                                      'CHE':'Switzerland',
-                                      'ITA':'Italy',
-                                      'SVK':'Slovakia',
-                                      'HUN':'Hungary',
-                                      'CZE':'Czechia'
-                                    } %}
-                                    {% set country_name = c3map.get(company.location.country, company.location.country) %}
-
-                                    {% set address = (
-                                      (company.location.street ~ ' ' ~ company.location.house_number)|trim ~ ', ' ~
-                                      (company.location.postal_code ~ ' ' ~ company.location.city)|trim ~ ', ' ~
-                                      country_name
-                                    ) | trim %}
-
-                                    <p><strong>Address:</strong> {{ address }}</p>
-
-                                    <iframe
-                                      class="map-container"
-                                      style="border:0"
-                                      loading="lazy"
-                                      allowfullscreen
-                                      referrerpolicy="no-referrer-when-downgrade"
-                                      src="https://www.google.com/maps?q={{ address|urlencode }}&output=embed">
-                                    </iframe>
-
-                                    <div class="mt-2">
-                                      <a class="btn btn-light"
-                                         target="_blank"
-                                         href="https://www.google.com/maps/search/?api=1&query={{ address|urlencode }}">
-                                        Open in Google Maps
-                                      </a>
-                                    </div>
-                                  {% else %}
-                                    <p><strong>Address:</strong> Unknown</p>
-                                  {% endif %}
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </li>
+                      </li>
 
-                  <!-- Management -->
-                  <li>
-                    <div>
-                      <div class="thumb">
-                        <div class="row" style="margin-top:35px;">
-                          <div class="col-lg-12">
-                            <div class="description">
-                              <div class="row">
-                                <div class="col-lg-12">
-                                  {% set managers = company.management or [] %}
-                                  {% if managers %}
-                                    {% for m in managers %}
-                                      <div class="mb-3">
-                                        <p><strong>Name:</strong> {{ m.name }}</p>
-                                        <p><strong>Role:</strong> {{ m.role }}</p>
-                                        <p><strong>Appointed:</strong> {{ m.appointed_on }}</p>
-                                      </div>
-                                    {% endfor %}
-                                  {% else %}
-                                    <p>No management records available.</p>
-                                  {% endif %}
+                      <!-- Management -->
+                      <li>
+                        <div>
+                          <div class="thumb">
+                            <div class="row" style="margin-top:35px;">
+                              <div class="col-lg-12">
+                                <div class="description">
+                                  <div class="row">
+                                    <div class="col-lg-12">
+                                      {% set managers = company.management or [] %}
+                                      {% if managers %}
+                                        {% for m in managers %}
+                                          <div class="mb-3">
+                                            <p><strong>Name:</strong> {{ m.name }}</p>
+                                            <p><strong>Role:</strong> {{ m.role }}</p>
+                                            <p><strong>Appointed:</strong> {{ m.appointed_on }}</p>
+                                          </div>
+                                        {% endfor %}
+                                      {% else %}
+                                        <p>No management records available.</p>
+                                      {% endif %}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </li>
+                      </li>
 
-                                    <!-- Financial -->
-                        <li>
-                          <div>
-                            <div class="thumb">
-                              <div class="row" style="margin-top:35px;">
-                                <div class="col-lg-12">
-                                  <div class="description">
-                                    <div class="row">
-                                      <div class="col-lg-12">
+                      <!-- Financial -->
+                      <li>
+                        <div>
+                          <div class="thumb">
+                            <div class="row" style="margin-top:35px;">
+                              <div class="col-lg-12">
+                                <div class="description">
+                                  <div class="row">
+                                    <div class="col-lg-12">
 
-                                        {% if company.financial | length > 0 %}
-                                          <div class="container">
-                                            <div class="row">
-                                              <div class="col-lg-12">
-                                                <div class="section-heading" style="margin-bottom: 10px;">
-                                                  <h2>Financial Years</h2>
-                                                  <h6>Click on a year to expand or collapse its information</h6>
-                                                </div>
+                                      {% if company.financial | length > 0 %}
+                                        <div class="container">
+                                          <div class="row">
+                                            <div class="col-lg-12">
+                                              <div class="section-heading" style="margin-bottom: 10px;">
+                                                <h2>Financial Years</h2>
+                                                <h6>Click on a year to expand or collapse its information</h6>
                                               </div>
                                             </div>
                                           </div>
+                                        </div>
 
-                                          {% for year in company.financial|reverse %}
-                                            <div class="d-inline-flex gap-1">
-                                              <div class="collapse-block">
-                                                <a class="btn btn-primary"
-                                                  data-bs-toggle="collapse"
-                                                  href="#collapseExample{{ loop.index }}"
-                                                  role="button"
-                                                  aria-expanded="false"
-                                                  aria-controls="collapseExample{{ loop.index }}">
-                                                  {% if year.fiscal_year.start[:4] == year.fiscal_year.end[:4] %}
-                                                    <strong>Financial year: </strong>&nbsp;{{ year.fiscal_year.start[:4] }}
+                                        {% for year in company.financial | reverse %}
+                                          <div class="d-inline-flex gap-1">
+                                            <div class="collapse-block">
+                                              <a class="btn btn-primary"
+                                                 data-bs-toggle="collapse"
+                                                 href="#collapseExample{{ loop.index }}"
+                                                 role="button"
+                                                 aria-expanded="false"
+                                                 aria-controls="collapseExample{{ loop.index }}">
+                                                {% if year.fiscal_year.start[:4] == year.fiscal_year.end[:4] %}
+                                                  <strong>Financial year: </strong>&nbsp;
+                                                  {{ year.fiscal_year.start[:4] }}
+                                                {% else %}
+                                                  <strong>Financial year: </strong>&nbsp;
+                                                  {{ year.fiscal_year.start[:4] }}
+                                                  / {{ year.fiscal_year.end[:4] }}
+                                                {% endif %}
+                                              </a>
+
+                                              <div class="collapse show" id="collapseExample{{ loop.index }}">
+                                                <div class="card card-body">
+
+                                                  {# ---------- GENERAL INFO ---------- #}
+                                                  <h2 class="section-header">General Info</h2>
+                                                  <br>
+                                                  <p style="padding-left: 20px;"><strong>Financial
+                                                    Director: </strong> {{ year.director_name }}</p>
+                                                  <p style="padding-left: 20px;"><strong>Submission
+                                                    Date: </strong> {{ year.submission_date }}</p>
+                                                  <p style="padding-left: 20px;"><strong>Fiscal
+                                                    year: </strong> {{ year.fiscal_year.start }}
+                                                    - {{ year.fiscal_year.end }}</p>
+                                                  <p style="padding-left: 20px;">
+                                                    <strong>Currency: </strong> {{ year.currency }}</p>
+                                                  <br>
+
+                                                  {# ---------- FINANCIAL RISK INDICATORS (LEVELS) ---------- #}
+                                                  <h2 class="section-header">Financial Risk Indicators</h2>
+                                                  <div class="financial-ratio-row">
+                                                    {# macro indicator_section(value, key, css="") #}
+                                                    {{ macros.indicator_section(year["working_capital"], "working_capital") }}
+                                                    {{ macros.indicator_section(year["debt_to_equity_ratio"], "debt_to_equity_ratio") }}
+                                                    {{ macros.indicator_section(year["equity_ratio"], "equity_ratio") }}
+                                                    {{ macros.indicator_section(year["current_ratio"], "current_ratio") }}
+                                                    {{ macros.indicator_section(year["cash_ratio"], "cash_ratio") }}
+                                                    {{ macros.indicator_section(year["quick_ratio"], "quick_ratio") }}
+                                                    {{ macros.indicator_section(year["fixed_asset_coverage"], "fixed_asset_coverage") }}
+                                                    {{ macros.indicator_section(year["profit_loss"], "profit_loss") }}
+                                                  </div>
+
+                                                  <br>
+                                                  <h2 class="section-header">Trend vs Previous Year</h2>
+                                                  {% if "asset_growth_rate" in year %}
+                                                    <div class="financial-ratio-row">
+                                                      {# macro indicator_section(value, key, css="") #}
+                                                      {{ macros.indicator_section(year["asset_growth_rate"], "asset_growth_rate") }}
+                                                      {{ macros.indicator_section(year["equity_growth_rate"], "equity_growth_rate") }}
+                                                      {{ macros.indicator_section(year["profit_loss_development"], "profit_loss_development") }}
+                                                      {{ macros.indicator_section(year["equity_ratio_trend"], "equity_ratio_trend") }}
+                                                      {{ macros.indicator_section(year["total_assets_trend"], "total_assets_trend") }}
+                                                      {{ macros.indicator_section(year["working_capital_trend"], "working_capital_trend") }}
+                                                      {{ macros.indicator_section(year["current_ratio_development"], "current_ratio_development") }}
+                                                      {{ macros.indicator_section(year["debt_to_equity_trend"], "debt_to_equity_trend") }}
+                                                    </div>
                                                   {% else %}
-                                                    <strong>Financial year: </strong>&nbsp;{{ year.fiscal_year.start[:4] }} / {{ year.fiscal_year.end[:4] }}
+                                                    <p>This year hasn't been finished yet.</p>
                                                   {% endif %}
-                                                </a>
 
-                                                <div class="collapse show" id="collapseExample{{ loop.index }}">
-                                                  <div class="card card-body">
+                                                  {# ---------- BALANCE SHEET ---------- #}
+                                                  <br>
+                                                  <h2 class="section-header">Balance Sheet</h2>
+                                                  <br>
 
-                                                    {# ---------- GENERAL INFO ---------- #}
-                                                    <h2 class="section-header">General Info</h2>
-                                                    <br>
-                                                    <p style="padding-left: 20px;"><strong>Financial Director: </strong> {{ year.director_name }}</p>
-                                                    <p style="padding-left: 20px;"><strong>Submission Date: </strong> {{ year.submission_date }}</p>
-                                                    <p style="padding-left: 20px;"><strong>Fiscal year: </strong> {{ year.fiscal_year.start }} - {{ year.fiscal_year.end }}</p>
-                                                    <p style="padding-left: 20px;"><strong>Currency: </strong> {{ year.currency }}</p>
-                                                    <br>
-
-                                                    {# ---------- FINANCIAL RISK INDICATORS (LEVELS) ---------- #}
-                                                    <h2 class="section-header">Financial Risk Indicators</h2>
-                                                    <div class="financial-ratio-row">
-                                                      {% for key, ratio in year.items() if key in [
-                                                        'working_capital',
-                                                        'debt_to_equity_ratio',
-                                                        'equity_ratio',
-                                                        'cash_ratio',
-                                                        'quick_ratio',
-                                                        'current_ratio',
-                                                        'fixed_asset_coverage'
-                                                      ] %}
-                                                        <div class="financial-ratio-box">
-                                                          <span class="info-bubble">i</span>
-                                                          <span class="tooltip-text">{{ ratio.description }}</span>
-                                                          <div>
-                                                            <h5>{{ key.replace('_',' ').title() }}</h5>
-                                                          </div>
-                                                          <div class="ratio-value">
-                                                            {% if ratio.value is not none %}
-                                                              {% if ratio.is_percent %}
-                                                                {{ "%.2f"|format(ratio.value) }}%
-                                                              {% else %}
-                                                                {{ "%.2f"|format(ratio.value) }}
-                                                              {% endif %}
-                                                            {% else %}
-                                                              Not available
-                                                            {% endif %}
-                                                          </div>
-                                                        </div>
-                                                      {% endfor %}
-                                                    </div>
-
-                                                    {# ---------- TREND VS PREVIOUS YEAR (Y0Y) ---------- #}
-                                                    {% set trend_keys = [
-                                                      'asset_growth_rate',
-                                                      'equity_growth_rate',
-                                                      'equity_ratio_trend',
-                                                      'total_assets_trend',
-                                                      'working_capital_trend',
-                                                      'current_ratio_development',
-                                                      'debt_to_equity_trend'
-                                                    ] %}
-
-                                                    <br>
-                                                    <h2 class="section-header">Trend vs Previous Year</h2>
-                                                    <div class="financial-ratio-row">
-                                                      {% for key in trend_keys %}
-                                                        {% set ratio = year.get(key) %}
-                                                        <div class="financial-ratio-box">
-                                                          <span class="info-bubble">i</span>
-                                                          <span class="tooltip-text">
-                                                            {% if ratio %}
-                                                              {{ ratio.description }}
-                                                            {% else %}
-                                                              No description available for this indicator.
-                                                            {% endif %}
-                                                          </span>
-
-                                                          <div>
-                                                            <h5>{{ key.replace('_',' ').title() }}</h5>
-                                                          </div>
-
-                                                          <div class="ratio-value">
-                                                            {% if ratio and ratio.value is not none %}
-                                                              {% if ratio.is_percent %}
-                                                                {{ "%.2f"|format(ratio.value) }}%
-                                                              {% else %}
-                                                                {{ "%.2f"|format(ratio.value) }}
-                                                              {% endif %}
-                                                            {% elif ratio %}
-                                                              Not available
-                                                            {% else %}
-                                                              Not found
-                                                            {% endif %}
-                                                          </div>
-                                                        </div>
-                                                      {% endfor %}
-                                                    </div>
-
-                                                    {# ---------- BALANCE SHEET ---------- #}
-                                                    <br>
-                                                    <h2 class="section-header">Balance Sheet</h2>
-                                                    <br>
-
-                                                    {% set assets_order = [
-                                                      {'key':'fixed_assets', 'label':'Fixed assets', 'group':1},
-                                                      {'key':'intangible_assets', 'label':'Intangible assets', 'group':2},
-                                                      {'key':'tangible_assets', 'label':'Tangible assets', 'group':2},
-                                                      {'key':'financial_assets', 'label':'Financial assets', 'group':2},
-                                                      {'key':'current_assets', 'label':'Current assets', 'group':1},
-                                                      {'key':'inventories', 'label':'Inventories', 'group':2},
-                                                      {'key':'receivables', 'label':'Receivables', 'group':2},
-                                                      {'key':'securities', 'label':'Securities / short-term financial assets', 'group':2},
-                                                      {'key':'cash_and_bank_balances', 'label':'Cash & bank balances', 'group':2},
-                                                      {'key':'prepaid_expenses', 'label':'Prepaid expenses & deferred charges', 'group':1},
-                                                      {'key':'deferred_tax_assets', 'label':'Deferred tax assets', 'group':1}
-                                                    ] %}
-
-                                                    <div class="asset-row">
-                                                      <h4 class="asset-label-h4">Assets
-                                                        <span class="asset-value-2">
+                                                  <div class="asset-row">
+                                                    <h4 class="asset-label-h4">Assets
+                                                      <span class="asset-value-2">
                                                           {{ "{:,.2f}".format(year.total_assets).replace(",", " ").replace(".", ",") }}
                                                         </span>
-                                                      </h4>
-                                                    </div>
+                                                    </h4>
+                                                  </div>
 
-                                                    <br>
+                                                  <br>
 
-                                                    {% for item in assets_order %}
-                                                      {% set raw_value = year[item.key] if item.key in year else 0 %}
-                                                      {% set value = raw_value if raw_value is not none else 0 %}
-                                                      <div class="asset-row">
-                                                        {% if item.group == 1 %}
-                                                          <h5 class="asset-label-h5">{{ item.label }}</h5>
-                                                        {% else %}
-                                                          <h6 class="asset-label-h6">{{ item.label }}</h6>
-                                                        {% endif %}
-                                                        <span class="asset-value">
-                                                          {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
-                                                        </span>
-                                                      </div>
-                                                    {% endfor %}
+                                                  {# macro asset_row(value, label, is_main) #}
+                                                  {{ macros.asset_row(year["intangible_assets"], "Intangible assets", False) }}
+                                                  {{ macros.asset_row(year["tangible_assets"], "Tangible assets", False) }}
+                                                  {{ macros.asset_row(year["financial_assets"], "Financial assets", False) }}
+                                                  {{ macros.asset_row(year["current_assets"], "Current assets", True) }}
+                                                  {{ macros.asset_row(year["inventories"], "Inventories", False) }}
+                                                  {{ macros.asset_row(year["receivables"], "Receivables", False) }}
+                                                  {{ macros.asset_row(year["securities"], "Securities / short-term financial assets", False) }}
+                                                  {{ macros.asset_row(year["cash_and_bank_balances"], "Cash & bank balances", False) }}
+                                                  {{ macros.asset_row(year["prepaid_expenses"], "Prepaid expenses & deferred charges", True) }}
+                                                  {{ macros.asset_row(year["deferred_tax_assets"], "Deferred tax assets", True) }}
 
-                                                    <br><br>
+                                                  <br><br>
 
-                                                    {% set liabilities_order = [
-                                                      {'key':'equity', 'label':'Equity', 'group':1},
-                                                      {'key':'share_capital', 'label':'Share capital', 'group':2},
-                                                      {'key':'capital_reserves', 'label':'Capital reserves', 'group':2},
-                                                      {'key':'revenue_reserves', 'label':'Revenue reserves', 'group':2},
-                                                      {'key':'retained_earnings', 'label':'Retained earnings / net loss', 'group':2},
-                                                      {'key':'liabilities', 'label':'Liabilities', 'group':1},
-                                                      {'key':'deferred_income', 'label':'Deferred income / accrued liabilities', 'group':1},
-                                                      {'key':'deferred_tax_liabilities', 'label':'Deferred tax liabilities', 'group':1}
-                                                    ] %}
-
-                                                    <h4 class="asset-label-h4">Liabilities & Equity
-                                                      <span class="asset-value-2">
+                                                  <h4 class="asset-label-h4">Liabilities & Equity
+                                                    <span class="asset-value-2">
                                                         {{ "{:,.2f}".format(year.total_liabilities).replace(",", " ").replace(".", ",") }}
                                                       </span>
-                                                    </h4>
+                                                  </h4>
 
-                                                    <br>
+                                                  <br>
 
-                                                    {% for item in liabilities_order %}
-                                                      {% set raw_value = year[item.key] if item.key in year else 0 %}
-                                                      {% set value = raw_value if raw_value is not none else 0 %}
-                                                      <div class="asset-row">
-                                                        {% if item.group == 1 %}
-                                                          <h5 class="asset-label-h5">{{ item.label }}</h5>
-                                                        {% elif item.group == 2 %}
-                                                          <h6 class="asset-label-h6">{{ item.label }}</h6>
-                                                        {% else %}
-                                                          <h6 class="asset-label-h7">{{ item.label }}</h6>
-                                                        {% endif %}
-                                                        <span class="asset-value">
-                                                          {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
-                                                        </span>
-                                                      </div>
-                                                    {% endfor %}
+                                                  {# macro asset_row(value, label, is_main) #}
+                                                  {{ macros.asset_row(year["equity"], "Equity", True) }}
+                                                  {{ macros.asset_row(year["share_capital"], "Share capital", False) }}
+                                                  {{ macros.asset_row(year["capital_reserves"], "Capital reserves", False) }}
+                                                  {{ macros.asset_row(year["revenue_reserves"], "Revenue reserves", False) }}
+                                                  {{ macros.asset_row(year["retained_earnings"], "Retained earnings / net loss", False) }}
+                                                  {{ macros.asset_row(year["liabilities"], "Liabilities", True) }}
+                                                  {{ macros.asset_row(year["deferred_income"], "Deferred income / accrued liabilities", True) }}
+                                                  {{ macros.asset_row(year["deferred_tax_liabilities"], "Deferred tax liabilities", True) }}
 
-                                                  </div>  {# card-body #}
-                                                </div>    {# collapse #}
-                                              </div>      {# collapse-block #}
-                                            </div>        {# d-inline-flex #}
-                                          {% endfor %}
 
-                                        {% else %}
-                                          <h2 class="section-header">Financial Years</h2>
-                                          <p style="padding-left:20px; color:#777;">No financial data available.</p>
-                                        {% endif %}
-
-                                      </div>
+                                                </div>
+                                                {# card-body #}
+                                              </div>
+                                              {# collapse #}
+                                            </div>
+                                            {# collapse-block #}
+                                          </div>        {# d-inline-flex #}
+                                        {% endfor %}
+                                      {% else %}
+                                        <h2 class="section-header">Financial Years</h2>
+                                        <p style="padding-left:20px; color:#777;">No financial data available.</p>
+                                      {% endif %}
                                     </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                        </li>
+                          </div>
+                        </div>
+                      </li>
 
 
-
-
-                  <!-- History -->
-                  <li>
-                    <div>
-                      <div class="thumb">
-                        <div class="row" style="margin-top:35px;">
-                          <div class="col-lg-12">
-                            <div class="description">
-                              <div class="row">
-                                <div class="col-lg-12">
-                                  {% set events = company.history or [] %}
-                                  {% if events %}
-                                    {% for e in events %}
-                                      <div class="mb-3">
-                                        <p><strong>Date:</strong> {{ e.event_date }}</p>
-                                        <p><strong>Event:</strong> {{ e.event }}</p>
-                                        <p><strong>Court:</strong> {{ e.court }}</p>
-                                      </div>
-                                    {% endfor %}
-                                  {% else %}
-                                    <p>No history available.</p>
-                                  {% endif %}
+                      <!-- History -->
+                      <li>
+                        <div>
+                          <div class="thumb">
+                            <div class="row" style="margin-top:35px;">
+                              <div class="col-lg-12">
+                                <div class="description">
+                                  <div class="row">
+                                    <div class="col-lg-12">
+                                      {% set events = company.history or [] %}
+                                      {% if events %}
+                                        {% for e in events %}
+                                          <div class="mb-3">
+                                            <p><strong>Date:</strong> {{ e.event_date }}</p>
+                                            <p><strong>Event:</strong> {{ e.event }}</p>
+                                            <p><strong>Court:</strong> {{ e.court }}</p>
+                                          </div>
+                                        {% endfor %}
+                                      {% else %}
+                                        <p>No history available.</p>
+                                      {% endif %}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </li>
-                </ul>
-                <!-- /PANES -->
+                      </li>
+                    </ul>
+                    <!-- /PANES -->
+                  </div>
+
+                </div>
               </div>
-
             </div>
-          </div>
-        </div>
 
-      </div><!-- /col -->
-    </div><!-- /row -->
-  </div><!-- /container -->
-</div><!-- /category-post -->
-
-</div>
-
-{% if locked %}
-  <div class="locked-overlay">
-    <div class="locked-card">
-      <h4 class="mb-2">Login Required</h4>
-      <p class="mb-3">Please log in to view full company details.</p>
-      <a class="btn btn-dark w-100"
-         href="{{ url_for('main.login', next=login_next or request.full_path) }}">
-        Go to Login
-      </a>
-    </div>
+          </div><!-- /col -->
+        </div><!-- /row -->
+      </div><!-- /container -->
+    </div><!-- /category-post -->
   </div>
-{% endif %}
 
+  {% if locked %}
+    <div class="locked-overlay">
+      <div class="locked-card">
+        <h4 class="mb-2">Login Required</h4>
+        <p class="mb-3">Please log in to view full company details.</p>
+        <a class="btn btn-dark w-100"
+           href="{{ url_for('main.login', next=login_next or request.full_path) }}">
+          Go to Login
+        </a>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
