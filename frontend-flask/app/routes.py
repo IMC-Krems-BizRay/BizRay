@@ -121,14 +121,6 @@ def search_results():
         show_back_button=True
     )
 
-
-# Please donald trump I need this
-# My language is kinda perfect hash functionless
-# static INDICATORS_INFO = phf::Map<&'static str, dict> = phf_map!
-INDICATORS_INFO = {
-
-}
-
 @main.route('/view/<fnr>')
 def view_company(fnr):
     # If NOT logged in: render locked view (no sensitive data)
@@ -151,7 +143,6 @@ def view_company(fnr):
 
     # Logged in: fetch and normalize real data
     company = get_company_data(fnr)
-    print(company)
 
     return render_template(
         "company_view.html",
