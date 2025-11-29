@@ -36,7 +36,8 @@ def extract_company_data(info):
             company_name: str,
             legal_form: null | str,
             company_number: str,
-            european_id: null | str
+            european_id: null | str,
+            is_deleted: bool
         },
         location: null | {
             street: null | str,
@@ -78,8 +79,6 @@ def extract_company_data(info):
                 total_assets: float,
                 equity: float,
                 share_capital: float,
-                share_capital_subitem: float,
-                share_capital_subitem_detail: float,
                 capital_reserves: float,
                 revenue_reserves: float,
                 retained_earnings: float,
@@ -88,6 +87,27 @@ def extract_company_data(info):
                 deferred_income: float,
                 deferred_tax_liabilities: float,
                 total_liabilities: float
+
+                // Indicators:
+                working_capital: float,
+                debt_to_equity_ratio: null | float,
+                equity_ratio: null | float,
+                quick_assets: float,
+                current_ratio: null | float,
+                cash_ratio: null | float,
+                quick_ratio: float,
+                fixed_asset_coverage: null | float,
+                profit_loss: float,
+
+                // Trends: can be absent for the first year
+                asset_growth_rate?: float,
+                equity_growth_rate?: float,
+                profit_loss_development?: float,
+                equity_ratio_trend?: float,
+                total_assets_trend?: float,
+                working_capital_trend?: float,
+                current_ratio_development?: float,
+                debt_to_equity_trend?: float
             },
             ...
         ],
@@ -102,8 +122,17 @@ def extract_company_data(info):
             ...
         ],
         compliance_indicators: {
-            filling_delay: int[](days)
-            late_filling_frequency: null | float(0.0-1.0)
+            filing_delays: {
+                fiscal_year: {
+                    start: str(date),
+                    end: str(date)
+                },
+                days: int,
+                is_late: bool
+            },
+            avg_filing_delay: null | float,
+            max_filing_delay: null | int,
+            late_filing_frequency: null | float,
             missing_reporting_years: int
         }
     }
@@ -115,19 +144,15 @@ def extract_company_data(info):
     financial = [get_document_data(id) for id in doc_ids[-3:]]  # limit to 3 last reports
     calculate_financial_indicators(financial)
 
-    compliance_indicators = extract_compliance_indicators(financial, history, total_reports)
+    compliance_indicators, is_deleted = extract_compliance_indicators(financial, history, total_reports)
 
-    # 'financial': {
-    #     'yearly': {
-    #
-    #     }
-    # }
     data = {
         'basic_info': {
             'company_name': info.FIRMA.FI_DKZ02[0].BEZEICHNUNG[0] if info.FIRMA.FI_DKZ02 else None,
             'legal_form': info.FIRMA.FI_DKZ07[0].RECHTSFORM.TEXT if info.FIRMA.FI_DKZ07 else None,
             'company_number': info.FNR,
             'european_id': info.EUID[0].EUID if info.EUID else None,
+            'is_deleted': is_deleted
         },
         'location': extract_location_info(info),
         'management': extract_management_info(info),
@@ -144,7 +169,6 @@ def calculate_financial_indicators(financial_years):
     """
     for year in financial_years:
         divide_or_none = lambda numerator, denominator: year[numerator] / year[denominator] if year[denominator] else None
-
         year["working_capital"] = year["current_assets"] - year["deferred_income"]
         year["debt_to_equity_ratio"] = divide_or_none("liabilities", "equity")
         year["equity_ratio"] = divide_or_none("equity", "total_liabilities") # wrong
@@ -214,7 +238,7 @@ def extract_compliance_indicators(financial, history, total_reports):
         'max_filing_delay': max_filing_delay,
         'late_filing_frequency': late_filing_frequency,
         'missing_reporting_years': missing_reporting_years
-    }
+    }, is_deleted
 
 
 def extract_location_info(info):
@@ -367,8 +391,9 @@ def get_document_data(id):
 
         'equity': search_balance("HGB_224_3_A"),
         'share_capital': search_balance("HGB_229_1_A_I"),
-        'share_capital_subitem': search_balance("HGB_224_3_A_I_a"),
-        'share_capital_subitem_detail': search_balance("HGB_229_1_A_I_a"),
+        # Unused
+        # 'share_capital_subitem': search_balance("HGB_224_3_A_I_a"),
+        # 'share_capital_subitem_detail': search_balance("HGB_229_1_A_I_a"),
         'capital_reserves': search_balance("HGB_224_3_A_II"),
         'revenue_reserves': search_balance("HGB_224_3_A_III"),
         'retained_earnings': search_balance("HGB_224_3_A_IV"),
