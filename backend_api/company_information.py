@@ -122,14 +122,16 @@ def extract_company_data(info):
             ...
         ],
         compliance_indicators: {
-            filing_delays: {
-                fiscal_year: {
-                    start: str(date),
-                    end: str(date)
-                },
-                days: int,
-                is_late: bool
-            },
+            filing_delays: [
+                {
+                    fiscal_year: {
+                        start: str(date),
+                        end: str(date)
+                    },
+                    days: int,
+                    is_late: bool
+                }
+            ],
             avg_filing_delay: null | float,
             max_filing_delay: null | int,
             late_filing_frequency: null | float,
