@@ -107,13 +107,7 @@
                                       {% set latest_year = company.financial[-1] %}
                                       <div>
                                         <h2 class="section-header">
-                                          Financial Risk Indicators -
-                                          {% if latest_year.fiscal_year.start[:4] == latest_year.fiscal_year.end[:4] %}
-                                            {{ latest_year.fiscal_year.start[:4] }}
-                                          {% else %}
-                                            {{ latest_year.fiscal_year.start[:4] }} /
-                                            {{ latest_year.fiscal_year.end[:4] }}
-                                          {% endif %}
+                                          Financial Risk Indicators - {{ macros.put_year(latest_year.fiscal_year) }}
                                         </h2>
                                       </div>
 
@@ -324,17 +318,10 @@
 
                                       {# ---------- Compliance Indicators (Overall Period) ---------- #}
                                       {% if company.compliance_indicators %}
-                                        {% set first_year = company.financial[0].fiscal_year %}
-                                        {% set last_year  = company.financial[-1].fiscal_year %}
-
                                         <div>
                                           <h2 class="section-header">
                                             Compliance Indicators (Overall Period) -
-                                            {% if first_year.start[:4] == last_year.end[:4] %}
-                                              {{ first_year.start[:4] }}
-                                            {% else %}
-                                              {{ first_year.start[:4] }} / {{ last_year.end[:4] }}
-                                            {% endif %}
+                                            {{ macros.put_year(company.financial[0].fiscal_year, company.financial[-1].fiscal_year) }}
                                           </h2>
                                         </div>
 
@@ -390,12 +377,7 @@
                                           <div style="margin-top: 15px; padding-left: 20px;">
                                             {% for fd in company.compliance_indicators.filing_delays %}
                                               <div class="mb-2">
-                                                {# Build label from fiscal_year #}
-                                                {% set start_year = fd.fiscal_year.start[:4] %}
-                                                {% set end_year = fd.fiscal_year.end[:4] %}
-                                                {% set label = start_year ~ ' / ' ~ end_year if start_year != end_year else start_year %}
-
-                                                <strong>{{ label }}:</strong><br>
+                                                <strong>{{ macros.put_year(fd.fiscal_year) }}:</strong><br>
 
                                                 {% if fd.days is not none %}
                                                   Filing delay: {{ fd.days|int }} days
@@ -544,14 +526,8 @@
                                                  role="button"
                                                  aria-expanded="false"
                                                  aria-controls="collapseExample{{ loop.index }}">
-                                                {% if year.fiscal_year.start[:4] == year.fiscal_year.end[:4] %}
-                                                  <strong>Financial year: </strong>&nbsp;
-                                                  {{ year.fiscal_year.start[:4] }}
-                                                {% else %}
-                                                  <strong>Financial year: </strong>&nbsp;
-                                                  {{ year.fiscal_year.start[:4] }}
-                                                  / {{ year.fiscal_year.end[:4] }}
-                                                {% endif %}
+                                              <strong>Financial year: </strong>&nbsp;
+                                              {{ macros.put_year(year.fiscal_year) }}
                                               </a>
 
                                               <div class="collapse show" id="collapseExample{{ loop.index }}">

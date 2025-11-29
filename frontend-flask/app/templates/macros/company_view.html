@@ -154,3 +154,19 @@
     </span>
   </div>
 {% endmacro %}
+
+
+{% macro put_year(first_fiscal_year, last_fiscal_year=none) %}
+  {% set first_year = first_fiscal_year.start[:4] %}
+  {% if last_fiscal_year is none %}
+    {% set last_year = first_fiscal_year.end[:4] %}
+  {% else %}
+    {% set last_year = last_fiscal_year.end[:4] %}
+  {% endif %}
+
+  {% if first_year == last_year %}
+    {{ first_year }}
+  {% else %}
+    {{ first_year }} / {{ last_year }}
+  {% endif %}
+{% endmacro %}
