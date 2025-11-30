@@ -41,25 +41,30 @@
   // { "result": { "address_key": "..." } }
   // { "result": { "manager_key": "..." } }
   // { "result": "{\"company_id\": \"627820s\", ...}" }
+  // Normalises one neighbour entry coming from the backend
   function parseNeighbour(neighbour) {
     if (!neighbour) return null;
 
-    let payload = neighbour.connected || neighbour.result || null;
+    let payload = neighbour.connected ?? neighbour.result ?? null;
     if (!payload) return null;
 
-    if (typeof payload === "string") {
-      try {
-        payload = JSON.parse(payload);
-      } catch (e) {
-        return {
-          type: "Unknown",
-          key: payload,
-          label: payload
-        };
-      }
+    // Backend sends:
+    // {"result": {"address_key": "'NoneType' object is not subscriptable"}}
+    // Detect this case directly:
+    if (
+      payload.address_key &&
+      typeof payload.address_key === "string" &&
+      payload.address_key.includes("NoneType")
+    ) {
+      return {
+        type: "Address",
+        key: "unknown_address",
+        label: "Address unknown"
+      };
     }
 
-    if (payload.address_key) {
+    // Normal address
+    if ("address_key" in payload) {
       return {
         type: "Address",
         key: payload.address_key,
@@ -67,6 +72,7 @@
       };
     }
 
+    // Manager
     if (payload.manager_key) {
       const parts = payload.manager_key.split("|");
       const date = parts[0] || "";
@@ -79,6 +85,7 @@
       };
     }
 
+    // Company
     if (payload.company_id) {
       return {
         type: "Company",
@@ -87,14 +94,9 @@
       };
     }
 
-    const firstKey = Object.keys(payload)[0];
-    const val = payload[firstKey];
-    return {
-      type: "Unknown",
-      key: String(val),
-      label: String(val)
-    };
+    return null;
   }
+
 
   function addCentralCompanyNode() {
     const type = "Company";
