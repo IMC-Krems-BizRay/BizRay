@@ -58,7 +58,7 @@
                       <span class="icon">
                         <img src="{{ url_for('static', filename='img/management-icon.png') }}"
                              style="max-width: 95%;height: auto;" alt="">
-                        <h4>Management</h4>
+                        <h4>Network</h4>
                       </span>
                         </div>
                       </div>
@@ -398,7 +398,48 @@
                                         <p style="padding-left:20px; color:#777;">No compliance data available.</p>
                                       {% endif %}
                                       {# ---------- Compliance end ---------- #}
-                                    {% endif %}
+                                            {# ---------- Management (Overview, collapsible) ---------- #}
+                                            {% set managers = company.management or [] %}
+                                            {% if managers %}
+                                              <div class="collapse-block" style="margin-top: 20px;">
+                                                <a class="btn btn-primary"
+                                                  data-bs-toggle="collapse"
+                                                  href="#collapseManagementOverview"
+                                                  role="button"
+                                                  aria-expanded="false"
+                                                  aria-controls="collapseManagementOverview">
+                                                  <strong>Management</strong>
+                                                </a>
+
+                                                <div class="collapse show" id="collapseManagementOverview">
+                                                  <div class="card card-body">
+                                                    {% for m in managers %}
+                                                      <div class="mb-3">
+                                                        <p><strong>Name:</strong> {{ m.name or 'Unknown' }}</p>
+                                                        <p><strong>Role:</strong> {{ m.role or 'Unknown' }}</p>
+                                                        <p><strong>Appointed:</strong> {{ m.appointed_on or 'Unknown' }}</p>
+                                                      </div>
+                                                      {% if not loop.last %}
+                                                        <hr>
+                                                      {% endif %}
+                                                    {% endfor %}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            {% else %}
+                                              <div style="margin-top: 20px; padding-left: 20px;">
+                                                <p style="color:#777;"><em>No management records available.</em></p>
+                                              </div>
+                                            {% endif %}
+                                            {# ---------- Management end ---------- #}
+
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </li>
                                   </div>
                                 </div>
                               </div>
@@ -465,7 +506,7 @@
                         </div>
                       </li>
 
-                      <!-- Management -->
+                      <!-- Network (graphs of connected companies go here later) -->
                       <li>
                         <div>
                           <div class="thumb">
@@ -474,18 +515,15 @@
                                 <div class="description">
                                   <div class="row">
                                     <div class="col-lg-12">
-                                      {% set managers = company.management or [] %}
-                                      {% if managers %}
-                                        {% for m in managers %}
-                                          <div class="mb-3">
-                                            <p><strong>Name:</strong> {{ m.name }}</p>
-                                            <p><strong>Role:</strong> {{ m.role }}</p>
-                                            <p><strong>Appointed:</strong> {{ m.appointed_on }}</p>
-                                          </div>
-                                        {% endfor %}
-                                      {% else %}
-                                        <p>No management records available.</p>
-                                      {% endif %}
+                                      <h2 class="section-header">Network</h2>
+                                      <p style="padding-left:20px; color:#777;">
+                                        Graphs and visualizations of connected companies will be displayed here.
+                                      </p>
+
+                                      {# Placeholder container for future JS graph / network viz #}
+                                      <div id="network-graph-container"
+                                           style="width: 100%; min-height: 320px; border-radius: 12px; background: #f5f5f5;">
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -494,6 +532,7 @@
                           </div>
                         </div>
                       </li>
+
 
                       <!-- Financial -->
                       <li>
