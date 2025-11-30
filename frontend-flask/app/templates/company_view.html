@@ -87,7 +87,7 @@
                   <div class="col-lg-12">
                     <!-- PANES -->
                     <ul class="nacc">
-                      <!-- Overview -->
+                        <!-- Overview -->
                       <li class="active">
                         <div>
                           <div class="thumb">
@@ -96,229 +96,225 @@
                                 <div class="description">
                                   <div class="row">
                                     <div class="col-lg-12">
+                                      {# ---------- BASIC COMPANY INFO ---------- #}
                                       <p><strong>Company Name:</strong> {{ company.basic_info.company_name }}</p>
                                       <p><strong>Legal Form:</strong> {{ company.basic_info.legal_form }}</p>
                                       <p><strong>Company Number:</strong> {{ company.basic_info.company_number }}</p>
                                       <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
-                                    </div>
 
-                                    {# ---------- Financial indicators (latest year) ---------- #}
-                                    {% if company.financial | length > 0 %}
-                                      {% set latest_year = company.financial[-1] %}
-                                      <div>
-                                        <h2 class="section-header">
-                                          Financial Risk Indicators - {{ macros.put_year(latest_year.fiscal_year) }}
-                                        </h2>
-                                      </div>
+                                      {# ---------- MANAGEMENT (OVERVIEW, COLLAPSIBLE AT TOP) ---------- #}
+                                      {% set managers = company.management or [] %}
+                                      {% if managers %}
+                                        <div class="collapse-block" style="margin-top: 20px;">
+                                          <a class="btn btn-primary"
+                                             data-bs-toggle="collapse"
+                                             href="#collapseManagementOverview"
+                                             role="button"
+                                             aria-expanded="false"
+                                             aria-controls="collapseManagementOverview">
+                                            <strong>Management</strong>
+                                          </a>
 
-                                      <div class="financial-ratio-row">
-                                        {% set css = "" %}
+                                          <div class="collapse show" id="collapseManagementOverview">
+                                            <div class="card card-body">
+                                              {% for m in managers %}
+                                                <div class="mb-3">
+                                                  <p><strong>Name:</strong> {{ m.name or 'Unknown' }}</p>
+                                                  <p><strong>Role:</strong> {{ m.role or 'Unknown' }}</p>
+                                                  <p><strong>Appointed:</strong> {{ m.appointed_on or 'Unknown' }}</p>
+                                                </div>
+                                                {% if not loop.last %}
+                                                  <hr>
+                                                {% endif %}
+                                              {% endfor %}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      {% else %}
+                                        <div style="margin-top: 20px; padding-left: 20px;">
+                                          <p style="color:#777;"><em>No management records available.</em></p>
+                                        </div>
+                                      {% endif %}
+                                      {# ---------- Management end ---------- #}
 
-                                        {% set value = latest_year["working_capital"] %}
-                                        {% if value > 0 %}
-                                          {% set css = "risk-low" %}
-                                        {% else %}
-                                          {% set css = "risk-medium" %}
-                                        {% endif %}
-                                        {{ macros.indicator_section(value, "working_capital", css) }}
+                                      {# ---------- FINANCIAL INDICATORS (LATEST YEAR) ---------- #}
+                                      {% if company.financial | length > 0 %}
+                                        {% set latest_year = company.financial[-1] %}
 
+                                        <div style="margin-top: 25px;">
+                                          <h2 class="section-header">
+                                            Financial Risk Indicators - {{ macros.put_year(latest_year.fiscal_year) }}
+                                          </h2>
+                                        </div>
 
-                                        {% set value = latest_year["debt_to_equity_ratio"] %}
-                                        {% if value < 1 %}
-                                          {% set css = "risk-low" %}
-                                        {% elif value <= 2 %}
-                                          {% set css = "risk-medium" %}
-                                        {% else %}
-                                          {% set css = "risk-high" %}
-                                        {% endif %}
-                                        {{ macros.indicator_section(value, "debt_to_equity_ratio", css) }}
-
-
-                                        {% set value = latest_year["equity_ratio"] %}
-                                        {% if value is not none %}
-                                          {% if value < 25 %}
-                                            {% set css = "risk-high" %}
-                                          {% elif value <= 50 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-low" %}
-                                          {% endif %}
-                                        {% else %}
+                                        <div class="financial-ratio-row">
                                           {% set css = "" %}
-                                        {% endif %}
-                                        {{ macros.indicator_section(value, "equity_ratio", css) }}
 
+                                          {# Working capital #}
+                                          {% set value = latest_year["working_capital"] %}
+                                          {% if value > 0 %}
+                                            {% set css = "risk-low" %}
+                                          {% else %}
+                                            {% set css = "risk-medium" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "working_capital", css) }}
 
-                                        {% set value = latest_year["current_ratio"] %}
-                                        {% if value is not none %}
+                                          {# Debt-to-equity #}
+                                          {% set value = latest_year["debt_to_equity_ratio"] %}
                                           {% if value < 1 %}
-                                            {% set css = "risk-high" %}
+                                            {% set css = "risk-low" %}
                                           {% elif value <= 2 %}
                                             {% set css = "risk-medium" %}
                                           {% else %}
-                                            {% set css = "risk-low" %}
-                                          {% endif %}
-                                        {% else %}
-                                          {% set css = "" %}
-                                        {% endif %}
-                                        {{ macros.indicator_section(value, "current_ratio", css) }}
-
-
-                                        {% set value = latest_year["quick_ratio"] %}
-                                        {% if value is not none %}
-                                          {% if value < 0.5 %}
-                                            {% set css = "risk-high" %}
-                                          {% elif value <= 1 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-low" %}
-                                          {% endif %}
-                                        {% else %}
-                                          {% set css = "" %}
-                                        {% endif %}
-                                        {{ macros.indicator_section(value, "quick_ratio", css) }}
-
-
-                                        {% set value = latest_year["cash_ratio"] %}
-                                        {% if value is not none %}
-                                          {% if value < 0.2 %}
-                                            {% set css = "risk-high" %}
-                                          {% elif value <= 1 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-low" %}
-                                          {% endif %}
-                                        {% else %}
-                                          {% set css = "" %}
-                                        {% endif %}
-                                        {{ macros.indicator_section(value, "cash_ratio", css) }}
-
-
-                                        {% set value = latest_year["fixed_asset_coverage"] %}
-                                        {% if value is not none %}
-                                          {% if value > 100 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif value > 50 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
                                             {% set css = "risk-high" %}
                                           {% endif %}
-                                        {% else %}
-                                          {% set css = "" %}
-                                        {% endif %}
-                                        {{ macros.indicator_section(value, "fixed_asset_coverage", css) }}
-                                      </div>
-                                      {#
-                                  <!-- ---------- Trend Indicators (Overall Period) ---------- -->
-                                  {% if company.financial|length > 1 and overview_trend %}
-                                    {% set first_year = company.financial[0].fiscal_year %}
-                                    {% set last_year  = company.financial[-1].fiscal_year %}
+                                          {{ macros.indicator_section(value, "debt_to_equity_ratio", css) }}
 
-                                    <div>
-                                      <h2 class="section-header">
-                                        Trend Indicators (Overall Period) -
-                                        {% if first_year.start[:4] == last_year.end[:4] %}
-                                          {{ first_year.start[:4] }}
-                                        {% else %}
-                                          {{ first_year.start[:4] }} / {{ last_year.end[:4] }}
-                                        {% endif %}
-                                      </h2>
-                                    </div>
-
-                                    {% set trend_keys = [
-                                      'asset_growth_rate',
-                                      'equity_growth_rate',
-                                      'equity_ratio_trend',
-                                      'total_assets_trend',
-                                      'working_capital_trend',
-                                      'current_ratio_development',
-                                      'debt_to_equity_trend'
-                                    ] %}
-
-                                    <div class="financial-ratio-row">
-                                      {% for key in trend_keys %}
-                                        {% set ratio = overview_trend.get(key) %}
-                                        {% set value = ratio.value if ratio else None %}
-                                        {% set css = "" %}
-
-                                        <!-- Colors for Trend indicators-->
-                                        {% if value is not none %}
-                                          {% if ratio.is_percent %}
-                                            {% if value < 0 %}
+                                          {# Equity ratio #}
+                                          {% set value = latest_year["equity_ratio"] %}
+                                          {% if value is not none %}
+                                            {% if value < 25 %}
                                               {% set css = "risk-high" %}
-                                            {% elif value < 5 %}
+                                            {% elif value <= 50 %}
                                               {% set css = "risk-medium" %}
                                             {% else %}
                                               {% set css = "risk-low" %}
                                             {% endif %}
                                           {% else %}
-                                            {% if value < 0 %}
+                                            {% set css = "" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "equity_ratio", css) }}
+
+                                          {# Current ratio #}
+                                          {% set value = latest_year["current_ratio"] %}
+                                          {% if value is not none %}
+                                            {% if value < 1 %}
                                               {% set css = "risk-high" %}
+                                            {% elif value <= 2 %}
+                                              {% set css = "risk-medium" %}
                                             {% else %}
                                               {% set css = "risk-low" %}
                                             {% endif %}
+                                          {% else %}
+                                            {% set css = "" %}
                                           {% endif %}
-                                        {% endif %}
+                                          {{ macros.indicator_section(value, "current_ratio", css) }}
 
-                                        <div class="financial-ratio-box {{ css }}">
-                                          <span class="info-bubble">i</span>
-                                          <span class="tooltip-text">
-                                            {% if ratio %}
-                                              {{ ratio.description }}
+                                          {# Quick ratio #}
+                                          {% set value = latest_year["quick_ratio"] %}
+                                          {% if value is not none %}
+                                            {% if value < 0.5 %}
+                                              {% set css = "risk-high" %}
+                                            {% elif value <= 1 %}
+                                              {% set css = "risk-medium" %}
                                             {% else %}
-                                              No description available for this indicator.
+                                              {% set css = "risk-low" %}
                                             {% endif %}
-                                          </span>
+                                          {% else %}
+                                            {% set css = "" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "quick_ratio", css) }}
 
-                                          <div>
-                                            <h5>{{ key.replace('_',' ').title() }}</h5>
+                                          {# Cash ratio #}
+                                          {% set value = latest_year["cash_ratio"] %}
+                                          {% if value is not none %}
+                                            {% if value < 0.2 %}
+                                              {% set css = "risk-high" %}
+                                            {% elif value <= 1 %}
+                                              {% set css = "risk-medium" %}
+                                            {% else %}
+                                              {% set css = "risk-low" %}
+                                            {% endif %}
+                                          {% else %}
+                                            {% set css = "" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "cash_ratio", css) }}
+
+                                          {# Fixed asset coverage #}
+                                          {% set value = latest_year["fixed_asset_coverage"] %}
+                                          {% if value is not none %}
+                                            {% if value > 100 %}
+                                              {% set css = "risk-low" %}
+                                            {% elif value > 50 %}
+                                              {% set css = "risk-medium" %}
+                                            {% else %}
+                                              {% set css = "risk-high" %}
+                                            {% endif %}
+                                          {% else %}
+                                            {% set css = "" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "fixed_asset_coverage", css) }}
+                                        </div>
+
+                                        {# ---------- TREND INDICATORS (OVERALL PERIOD) ---------- #}
+                                        {% if company.financial|length > 1 and overview_trend %}
+                                          {% set first_year = company.financial[0].fiscal_year %}
+                                          {% set last_year  = company.financial[-1].fiscal_year %}
+
+                                          <div style="margin-top: 25px;">
+                                            <h2 class="section-header">
+                                              Trend Indicators (Overall Period) -
+                                              {{ macros.put_year(first_year, last_year) }}
+                                            </h2>
                                           </div>
 
-                                          <div class="ratio-value">
-                                            {% if ratio and ratio.value is not none %}
-                                              {% set val = ratio.value %}
-                                              {% if ratio.is_percent %}
-                                                {% if val > 0 %}
-                                                  +{{ "%.2f"|format(val) }}%
-                                                {% elif val < 0 %}
-                                                  {{ "%.2f"|format(val) }}%
+                                          {% set trend_keys = [
+                                            'asset_growth_rate',
+                                            'equity_growth_rate',
+                                            'equity_ratio_trend',
+                                            'total_assets_trend',
+                                            'working_capital_trend',
+                                            'current_ratio_development',
+                                            'debt_to_equity_trend'
+                                          ] %}
+
+                                          <div class="financial-ratio-row">
+                                            {% for key in trend_keys %}
+                                              {% set ind = overview_trend.get(key) %}
+                                              {% set css = "" %}
+
+                                              {% if ind and ind.value is not none %}
+                                                {% set val = ind.value %}
+
+                                                {# Percent-based metrics #}
+                                                {% if ind.is_percent %}
+                                                  {% if val < 0 %}
+                                                    {% set css = "risk-high" %}
+                                                  {% elif val < 5 %}
+                                                    {% set css = "risk-medium" %}
+                                                  {% else %}
+                                                    {% set css = "risk-low" %}
+                                                  {% endif %}
                                                 {% else %}
-                                                  0%
-                                                {% endif %}
-                                              {% else %}
-                                                {% if val > 0 %}
-                                                  +{{ "%.2f"|format(val) }}
-                                                {% elif val < 0 %}
-                                                  {{ "%.2f"|format(val) }}
-                                                {% else %}
-                                                  0
+                                                  {# Absolute metrics: negative = bad, positive = ok #}
+                                                  {% if val < 0 %}
+                                                    {% set css = "risk-high" %}
+                                                  {% else %}
+                                                    {% set css = "risk-low" %}
+                                                  {% endif %}
                                                 {% endif %}
                                               {% endif %}
-                                            {% else %}
-                                              Not available
-                                            {% endif %}
+
+                                              {{ macros.indicator_section(ind, key, css) }}
+                                            {% endfor %}
                                           </div>
-                                        </div>
-                                      {% endfor %}
-                                    </div>
-                                  {% else %}
-                                    <h2 class="section-header">Trend Indicators (Overall Period)</h2>
-                                    <p style="padding-left:20px; color:#777;">No trend data available.</p>
-                                  {% endif %}
+                                        {% else %}
+                                          <h2 class="section-header" style="margin-top: 25px;">Trend Indicators (Overall Period)</h2>
+                                          <p style="padding-left:20px; color:#777;">No trend data available.</p>
+                                        {% endif %}
 
-                                {% else %}
-                                  <!-- No financial data at all -->
-                                  <h2 class="section-header">Financial Risk Indicators</h2>
-                                  <p style="padding-left:20px; color:#777;">No financial data available.</p>
+                                      {% else %}
+                                        {# No financial data at all #}
+                                        <h2 class="section-header" style="margin-top: 25px;">Financial Risk Indicators</h2>
+                                        <p style="padding-left:20px; color:#777;">No financial data available.</p>
 
-                                  <h2 class="section-header">Trend Indicators (Overall Period)</h2>
-                                  <p style="padding-left:20px; color:#777;">No trend data available.</p>
-                                {% endif %}
-                                #}
+                                        <h2 class="section-header" style="margin-top: 25px;">Trend Indicators (Overall Period)</h2>
+                                        <p style="padding-left:20px; color:#777;">No trend data available.</p>
+                                      {% endif %}
 
-                                      {# ---------- Compliance Indicators (Overall Period) ---------- #}
+                                      {# ---------- COMPLIANCE INDICATORS (OVERALL PERIOD) ---------- #}
                                       {% if company.compliance_indicators %}
-                                        <div>
+                                        <div style="margin-top: 25px;">
                                           <h2 class="section-header">
                                             Compliance Indicators (Overall Period) -
                                             {{ macros.put_year(company.financial[0].fiscal_year, company.financial[-1].fiscal_year) }}
@@ -326,9 +322,9 @@
                                         </div>
 
                                         <div class="financial-ratio-row">
+                                          {# Average filing delay #}
                                           {% set css = "" %}
                                           {% set value = company.compliance_indicators["avg_filing_delay"] %}
-
                                           {% if value <= 90 %}
                                             {% set css = "risk-low" %}
                                           {% elif value <= 273 %}
@@ -336,10 +332,9 @@
                                           {% else %}
                                             {% set css = "risk-high" %}
                                           {% endif %}
-                                          {# macro indicator_section(value, key, css="") #}
                                           {{ macros.indicator_section(value, "avg_filing_delay", css) }}
 
-
+                                          {# Max filing delay #}
                                           {% set value = company.compliance_indicators["max_filing_delay"] %}
                                           {% if value <= 180 %}
                                             {% set css = "risk-low" %}
@@ -350,7 +345,7 @@
                                           {% endif %}
                                           {{ macros.indicator_section(value, "max_filing_delay", css) }}
 
-
+                                          {# Late filing frequency #}
                                           {% set value = company.compliance_indicators["late_filing_frequency"] %}
                                           {% if value < 0.2 %}
                                             {% set css = "risk-low" %}
@@ -361,7 +356,7 @@
                                           {% endif %}
                                           {{ macros.indicator_section(value, "late_filing_frequency", css) }}
 
-
+                                          {# Missing reporting years #}
                                           {% set value = company.compliance_indicators["missing_reporting_years"] %}
                                           {% if value == 0 %}
                                             {% set css = "risk-low" %}
@@ -394,59 +389,20 @@
                                           </div>
                                         {% endif %}
                                       {% else %}
-                                        <h2 class="section-header">Compliance Indicators (Overall Period)</h2>
+                                        <h2 class="section-header" style="margin-top: 25px;">Compliance Indicators (Overall Period)</h2>
                                         <p style="padding-left:20px; color:#777;">No compliance data available.</p>
                                       {% endif %}
                                       {# ---------- Compliance end ---------- #}
-                                            {# ---------- Management (Overview, collapsible) ---------- #}
-                                            {% set managers = company.management or [] %}
-                                            {% if managers %}
-                                              <div class="collapse-block" style="margin-top: 20px;">
-                                                <a class="btn btn-primary"
-                                                  data-bs-toggle="collapse"
-                                                  href="#collapseManagementOverview"
-                                                  role="button"
-                                                  aria-expanded="false"
-                                                  aria-controls="collapseManagementOverview">
-                                                  <strong>Management</strong>
-                                                </a>
 
-                                                <div class="collapse show" id="collapseManagementOverview">
-                                                  <div class="card card-body">
-                                                    {% for m in managers %}
-                                                      <div class="mb-3">
-                                                        <p><strong>Name:</strong> {{ m.name or 'Unknown' }}</p>
-                                                        <p><strong>Role:</strong> {{ m.role or 'Unknown' }}</p>
-                                                        <p><strong>Appointed:</strong> {{ m.appointed_on or 'Unknown' }}</p>
-                                                      </div>
-                                                      {% if not loop.last %}
-                                                        <hr>
-                                                      {% endif %}
-                                                    {% endfor %}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            {% else %}
-                                              <div style="margin-top: 20px; padding-left: 20px;">
-                                                <p style="color:#777;"><em>No management records available.</em></p>
-                                              </div>
-                                            {% endif %}
-                                            {# ---------- Management end ---------- #}
-
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </li>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                                    </div> {# col-lg-12 #}
+                                  </div>   {# row #}
+                                </div>     {# description #}
+                              </div>       {# col-lg-12 #}
+                            </div>         {# row #}
+                          </div>           {# thumb #}
+                        </div>             {# wrapper div #}
                       </li>
+
 
 
                       <!-- Location -->
