@@ -35,3 +35,19 @@ def get_company_data(fnr):
         return {}
     res.raise_for_status()
     return response_to_data(res)
+
+def get_node_neighbours(key: str, label: str = "Company"):
+    """
+    Call the FastAPI /node endpoint and return its raw JSON.
+    This endpoint returns {"neighbours": [...]} – no 'result' wrapper.
+    """
+    url = f"http://127.0.0.1:8000/node/{key}"
+    params = {"label": label}
+    try:
+        res = requests.get(url, params=params, timeout=15)
+        res.raise_for_status()
+        return res.json()
+    except Exception as e:
+        print(f"API error (get_node_neighbours): {e}")
+        # Frontend expects at least this shape
+        return {"neighbours": []}

@@ -1,4 +1,4 @@
-from .utils import fetch_companies, get_company_data
+from .utils import fetch_companies, get_company_data, get_node_neighbours
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
 from .models import db, User, bcrypt, SearchHistory
 from datetime import datetime
@@ -138,7 +138,8 @@ def view_company(fnr):
             login_next=request.full_path,
             company=company_stub,
             title="Company view",
-            show_back_button=True
+            show_back_button=True,
+            fnr=fnr
         )
 
     # Logged in: fetch and normalize real data
@@ -150,7 +151,28 @@ def view_company(fnr):
         company=company,
         title="Company view",
         show_back_button=True,
+        fnr=fnr
     )
+
+@main.route("/api/network")
+def api_network():
+    """
+    Frontend-facing API used by the JS graph.
+    It proxies to the FastAPI /node/{key}?label=... endpoint.
+    """
+    key = request.args.get("key")
+    label = request.args.get("label", "Company")
+
+    if not key:
+        return {"neighbours": []}, 400
+
+    try:
+        data = get_node_neighbours(key, label)
+        # Returning a dict is auto-JSONified by Flask
+        return data
+    except Exception as e:
+        print(f"/api/network error: {e}")
+        return {"neighbours": []}, 500
 
 
 
