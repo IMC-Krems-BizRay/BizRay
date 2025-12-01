@@ -68,11 +68,17 @@
         const g = JSON.parse(payload);
 
         if (g && g.company_id) {
+          const id = g.company_id;
+          const name = g.company_name || id;
+          const label = `${name}`; // show ONLY the name
+
           return {
             type: "Company",
-            key: g.company_id,
-            label: g.company_name || g.company_id,
+            key: id,
+            label: label,
             extra: {
+              companyId: id,
+              companyName: name,
               deleted: g.deleted,
               last_filed_doc: g.last_filed_doc,
               missing_years: g.missing_years,
@@ -134,8 +140,6 @@
     return null;
   }
 
-
-
   function addCentralCompanyNode() {
     const type = "Company";
     const key = COMPANY_ID;
@@ -146,7 +150,9 @@
         id: nodeId,
         label: COMPANY_NAME || COMPANY_ID,
         group: "company",
-        title: `Company\nID: ${COMPANY_ID}`
+        title: `Company\nID: ${COMPANY_ID}`,
+        rawKey: COMPANY_ID,
+        name: COMPANY_NAME
       });
       seenNodes.add(nodeId);
     }
@@ -154,7 +160,7 @@
   }
 
   function initNetwork() {
-    const data = { nodes: nodes, edges: edges };
+    const data = {nodes: nodes, edges: edges};
     const options = {
       interaction: {
         hover: true,
@@ -165,10 +171,10 @@
       physics: {
         enabled: true,
         solver: "forceAtlas2Based",
-        stabilization: { iterations: 150 }
+        stabilization: {iterations: 150}
       },
       nodes: {
-        font: { size: 14 }
+        font: {size: 14}
       },
       edges: {
         smooth: true
@@ -177,22 +183,22 @@
         company: {
           shape: "dot",
           size: 25,
-          color: { background: "#1f77b4", border: "#1f77b4" } // blue
+          color: {background: "#1f77b4", border: "#1f77b4"} // blue
         },
         manager: {
           shape: "dot",
           size: 20,
-          color: { background: "#ff7f0e", border: "#ff7f0e" } // orange
+          color: {background: "#ff7f0e", border: "#ff7f0e"} // orange
         },
         address: {
           shape: "dot",
           size: 20,
-          color: { background: "#2ca02c", border: "#2ca02c" } // green
+          color: {background: "#2ca02c", border: "#2ca02c"} // green
         },
         unknown: {
           shape: "dot",
           size: 18,
-          color: { background: "#7f7f7f", border: "#7f7f7f" } // grey
+          color: {background: "#7f7f7f", border: "#7f7f7f"} // grey
         }
       }
     };
@@ -215,14 +221,21 @@
       if (!panel || !node) return;
 
       const rawType = node.group || "";
-        const prettyType =
-            rawType.charAt(0).toUpperCase() + rawType.slice(1); // company -> Company
+      const prettyType =
+        rawType.charAt(0).toUpperCase() + rawType.slice(1); // company -> Company
 
-
-      panel.innerHTML = `
-        <h5 class="network-detail-title">Selected ${escapeHtml(prettyType)}</h5>
-        <p><strong>Label:</strong> ${escapeHtml(node.label)}</p>
-      `;
+      if (rawType === "company") {
+        panel.innerHTML = `
+          <h5 class="network-detail-title">Selected Company</h5>
+          <p><strong>Name:</strong> ${escapeHtml(node.label)}</p>
+          <p><strong>ID:</strong> ${escapeHtml(node.rawKey)}</p>
+        `;
+      } else {
+        panel.innerHTML = `
+          <h5 class="network-detail-title">Selected ${escapeHtml(prettyType)}</h5>
+          <p><strong>Label:</strong> ${escapeHtml(node.label)}</p>
+        `;
+      }
     });
   }
 
@@ -278,7 +291,9 @@
                 groupName === "address"
                   ? groupName
                   : "unknown",
-              title: title
+              title: `${parsed.companyName || parsed.label}\nID: ${parsed.key}`,
+              rawKey: parsed.key,         // <-- store the ID here for detail panel
+              name: parsed.label
             });
             seenNodes.add(targetNodeId);
           }
@@ -315,3 +330,4 @@
   // Script is loaded after the DOM elements in the template.
   initialLoad();
 })();
+
