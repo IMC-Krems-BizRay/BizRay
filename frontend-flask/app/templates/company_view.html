@@ -1,14 +1,6 @@
 {% import "macros/company_view.html" as macros %}
 {% extends "base.html" %}
-{% block title %}
-  {% set basic = company.get('basic_info', {}) %}
-  {% if basic.company_name %}
-    Company – {{ basic.company_name }}
-  {% else %}
-    Company – Details
-  {% endif %}
-{% endblock %}
-
+{% block title %}Company – {{ company.basic_info.company_name or 'Details' }}{% endblock %}
 
 {% block content %}
   <div id="company-page" class="{% if locked %}content-blurred{% endif %}">
@@ -24,14 +16,7 @@
           <div class="col-lg-10">
             <div class="top-text header-text">
               <h6>Company details</h6>
-              <h2>
-                {% if company and company.get('basic_info') and company.basic_info.company_name %}
-                  {{ company.basic_info.company_name }}
-                {% else %}
-                  Company details
-                {% endif %}
-              </h2>
-
+              <h2>{{ company.basic_info.company_name }}</h2>
             </div>
           </div>
         </div>
@@ -102,7 +87,7 @@
                   <div class="col-lg-12">
                     <!-- PANES -->
                     <ul class="nacc">
-                       <!-- Overview -->
+                        <!-- Overview -->
                       <li class="active">
                         <div>
                           <div class="thumb">
@@ -111,27 +96,22 @@
                                 <div class="description">
                                   <div class="row">
                                     <div class="col-lg-12">
-                                      {# safe access helpers #}
-                                      {% set basic = company.get('basic_info', {}) %}
-                                      {% set fin_list = company.get('financial', []) %}
-                                      {% set compliance = company.get('compliance_indicators') %}
-
                                       {# ---------- BASIC COMPANY INFO ---------- #}
-                                      <p><strong>Company Name:</strong> {{ basic.company_name or 'Unknown' }}</p>
-                                      <p><strong>Legal Form:</strong> {{ basic.legal_form or 'Unknown' }}</p>
-                                      <p><strong>Company Number:</strong> {{ basic.company_number or 'Unknown' }}</p>
-                                      <p><strong>European ID:</strong> {{ basic.european_id or 'Unknown' }}</p>
+                                      <p><strong>Company Name:</strong> {{ company.basic_info.company_name }}</p>
+                                      <p><strong>Legal Form:</strong> {{ company.basic_info.legal_form }}</p>
+                                      <p><strong>Company Number:</strong> {{ company.basic_info.company_number }}</p>
+                                      <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
 
                                       {# ---------- MANAGEMENT (OVERVIEW, COLLAPSIBLE AT TOP) ---------- #}
                                       {% set managers = company.management or [] %}
                                       {% if managers %}
                                         <div class="collapse-block" style="margin-top: 20px;">
                                           <a class="btn btn-primary"
-                                            data-bs-toggle="collapse"
-                                            href="#collapseManagementOverview"
-                                            role="button"
-                                            aria-expanded="false"
-                                            aria-controls="collapseManagementOverview">
+                                             data-bs-toggle="collapse"
+                                             href="#collapseManagementOverview"
+                                             role="button"
+                                             aria-expanded="false"
+                                             aria-controls="collapseManagementOverview">
                                             <strong>Management</strong>
                                           </a>
 
@@ -158,8 +138,8 @@
                                       {# ---------- Management end ---------- #}
 
                                       {# ---------- FINANCIAL INDICATORS (LATEST YEAR) ---------- #}
-                                      {% if fin_list | length > 0 %}
-                                        {% set latest_year = fin_list[-1] %}
+                                      {% if company.financial | length > 0 %}
+                                        {% set latest_year = company.financial[-1] %}
 
                                         <div style="margin-top: 25px;">
                                           <h2 class="section-header">
@@ -267,13 +247,14 @@
                                         </div>
 
                                         {# ---------- TREND INDICATORS (OVERALL PERIOD) ---------- #}
-                                        {% if fin_list|length > 1 and overview_trend %}
-                                          {% set first_year = fin_list[0].fiscal_year %}
-                                          {% set last_year  = fin_list[-1].fiscal_year %}
+                                        {% if company.financial|length > 1 and overview_trend %}
+                                          {% set first_year = company.financial[0].fiscal_year %}
+                                          {% set last_year  = company.financial[-1].fiscal_year %}
 
                                           <div style="margin-top: 25px;">
                                             <h2 class="section-header">
-                                              Trend Indicators (Overall Period) - {{ macros.put_year(first_year, last_year) }}
+                                              Trend Indicators (Overall Period) -
+                                              {{ macros.put_year(first_year, last_year) }}
                                             </h2>
                                           </div>
 
@@ -295,6 +276,7 @@
                                               {% if ind and ind.value is not none %}
                                                 {% set val = ind.value %}
 
+                                                {# Percent-based metrics #}
                                                 {% if ind.is_percent %}
                                                   {% if val < 0 %}
                                                     {% set css = "risk-high" %}
@@ -304,6 +286,7 @@
                                                     {% set css = "risk-low" %}
                                                   {% endif %}
                                                 {% else %}
+                                                  {# Absolute metrics: negative = bad, positive = ok #}
                                                   {% if val < 0 %}
                                                     {% set css = "risk-high" %}
                                                   {% else %}
@@ -330,22 +313,18 @@
                                       {% endif %}
 
                                       {# ---------- COMPLIANCE INDICATORS (OVERALL PERIOD) ---------- #}
-                                      {% if compliance %}
+                                      {% if company.compliance_indicators %}
                                         <div style="margin-top: 25px;">
                                           <h2 class="section-header">
                                             Compliance Indicators (Overall Period) -
-                                            {% if fin_list|length > 0 %}
-                                              {{ macros.put_year(fin_list[0].fiscal_year, fin_list[-1].fiscal_year) }}
-                                            {% else %}
-                                              Unknown period
-                                            {% endif %}
+                                            {{ macros.put_year(company.financial[0].fiscal_year, company.financial[-1].fiscal_year) }}
                                           </h2>
                                         </div>
 
                                         <div class="financial-ratio-row">
                                           {# Average filing delay #}
                                           {% set css = "" %}
-                                          {% set value = compliance["avg_filing_delay"] %}
+                                          {% set value = company.compliance_indicators["avg_filing_delay"] %}
                                           {% if value <= 90 %}
                                             {% set css = "risk-low" %}
                                           {% elif value <= 273 %}
@@ -356,7 +335,7 @@
                                           {{ macros.indicator_section(value, "avg_filing_delay", css) }}
 
                                           {# Max filing delay #}
-                                          {% set value = compliance["max_filing_delay"] %}
+                                          {% set value = company.compliance_indicators["max_filing_delay"] %}
                                           {% if value <= 180 %}
                                             {% set css = "risk-low" %}
                                           {% elif value <= 273 %}
@@ -367,7 +346,7 @@
                                           {{ macros.indicator_section(value, "max_filing_delay", css) }}
 
                                           {# Late filing frequency #}
-                                          {% set value = compliance["late_filing_frequency"] %}
+                                          {% set value = company.compliance_indicators["late_filing_frequency"] %}
                                           {% if value < 0.2 %}
                                             {% set css = "risk-low" %}
                                           {% elif value <= 0.5 %}
@@ -378,7 +357,7 @@
                                           {{ macros.indicator_section(value, "late_filing_frequency", css) }}
 
                                           {# Missing reporting years #}
-                                          {% set value = compliance["missing_reporting_years"] %}
+                                          {% set value = company.compliance_indicators["missing_reporting_years"] %}
                                           {% if value == 0 %}
                                             {% set css = "risk-low" %}
                                           {% elif value <= 2 %}
@@ -389,9 +368,9 @@
                                           {{ macros.indicator_section(value, "missing_reporting_years", css) }}
                                         </div>
 
-                                        {% if compliance.filing_delays %}
+                                        {% if company.compliance_indicators.filing_delays %}
                                           <div style="margin-top: 15px; padding-left: 20px;">
-                                            {% for fd in compliance.filing_delays %}
+                                            {% for fd in company.compliance_indicators.filing_delays %}
                                               <div class="mb-2">
                                                 <strong>{{ macros.put_year(fd.fiscal_year) }}:</strong><br>
 
@@ -423,7 +402,6 @@
                           </div>           {# thumb #}
                         </div>             {# wrapper div #}
                       </li>
-
 
 
 
@@ -545,11 +523,11 @@
                                           <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
                                           <script>
-                                            const COMPANY_ID = "{{ company.get('basic_info', {}).get('company_number', '') }}";  // ID used in /node/{id}?label=Company
-                                            const COMPANY_NAME = "{{ company.get('basic_info', {}).get('company_name', '') }}";
+                                            // Data for the JS file
+                                            const COMPANY_ID = "{{ company.basic_info.company_number }}";  // ID used in /node/{id}?label=Company
+                                            const COMPANY_NAME = "{{ company.basic_info.company_name }}";
                                             const NETWORK_API_URL = "{{ url_for('main.api_network') }}";
                                           </script>
-
 
                                           <script src="{{ url_for('static', filename='js/network.js') }}?v=10"></script>
                                         {% endif %}
