@@ -32,7 +32,7 @@ def make_address_key(loc):
         house_number = loc["house_number"]
         city = loc["city"]
         postal_code = loc["postal_code"]
-        return f'{street}|{house_number}|{city}|{postal_code}'.strip()
+        return f'{street} {house_number}, {postal_code} {city}'.strip()
     except Exception as e:
         return str(e)
 
@@ -55,6 +55,8 @@ def get_risk_indicators(data):
     '''
     company_id
 
+    company_name
+
 
      #Status: active / not active
      #last submitted XML report: 20XX
@@ -64,6 +66,7 @@ def get_risk_indicators(data):
     '''
 
     company_id = data["basic_info"]["company_number"]
+    company_name = data["basic_info"]["company_name"]
 
     try:
         active = data["basic_info"]["is_deleted"]
@@ -74,10 +77,10 @@ def get_risk_indicators(data):
 
         profit_loss = data["financial"][-1]["profit_loss"] #most recent year
 
-        return {"company_id": company_id, "deleted": active, "last_file": last_filed_doc, "missing_years": missing_years, "profit_loss": profit_loss}
+        return {"company_id": company_id, "company_name": company_name, "deleted": active, "last_file": last_filed_doc, "missing_years": missing_years, "profit_loss": profit_loss}
 
     except Exception as e:
-        return {"company_id": company_id, "error": "Data unavailable"}
+        return {"company_id": company_id, "company_name": company_name, "error": "Data unavailable"}
 
 
 def CREATE_COMPANY(data):
