@@ -313,85 +313,103 @@
                                       {% endif %}
 
                                       {# ---------- COMPLIANCE INDICATORS (OVERALL PERIOD) ---------- #}
-                                      {% if company.compliance_indicators %}
-                                        <div style="margin-top: 25px;">
-                                          <h2 class="section-header">
-                                            Compliance Indicators (Overall Period) -
-                                            {{ macros.put_year(company.financial[0].fiscal_year, company.financial[-1].fiscal_year) }}
-                                          </h2>
-                                        </div>
-
-                                        <div class="financial-ratio-row">
-                                          {# Average filing delay #}
-                                          {% set css = "" %}
-                                          {% set value = company.compliance_indicators["avg_filing_delay"] %}
-                                          {% if value <= 90 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif value <= 273 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-high" %}
-                                          {% endif %}
-                                          {{ macros.indicator_section(value, "avg_filing_delay", css) }}
-
-                                          {# Max filing delay #}
-                                          {% set value = company.compliance_indicators["max_filing_delay"] %}
-                                          {% if value <= 180 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif value <= 273 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-high" %}
-                                          {% endif %}
-                                          {{ macros.indicator_section(value, "max_filing_delay", css) }}
-
-                                          {# Late filing frequency #}
-                                          {% set value = company.compliance_indicators["late_filing_frequency"] %}
-                                          {% if value < 0.2 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif value <= 0.5 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-high" %}
-                                          {% endif %}
-                                          {{ macros.indicator_section(value, "late_filing_frequency", css) }}
-
-                                          {# Missing reporting years #}
-                                          {% set value = company.compliance_indicators["missing_reporting_years"] %}
-                                          {% if value == 0 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif value <= 2 %}
-                                            {% set css = "risk-medium" %}
-                                          {% else %}
-                                            {% set css = "risk-high" %}
-                                          {% endif %}
-                                          {{ macros.indicator_section(value, "missing_reporting_years", css) }}
-                                        </div>
-
-                                        {% if company.compliance_indicators.filing_delays %}
-                                          <div style="margin-top: 15px; padding-left: 20px;">
-                                            {% for fd in company.compliance_indicators.filing_delays %}
-                                              <div class="mb-2">
-                                                <strong>{{ macros.put_year(fd.fiscal_year) }}:</strong><br>
-
-                                                {% if fd.days is not none %}
-                                                  Filing delay: {{ fd.days|int }} days
-                                                  {% if fd.is_late %}
-                                                    <span class="badge bg-danger ms-1">Late (&gt; 9 months)</span>
-                                                  {% else %}
-                                                    <span class="badge bg-success ms-1">On time</span>
-                                                  {% endif %}
-                                                {% else %}
-                                                  Filing delay: Not available
-                                                {% endif %}
-                                              </div>
-                                            {% endfor %}
+                                          {% if company.compliance_indicators %}
+                                          <div style="margin-top: 25px;">
+                                            {% if company.financial is defined and company.financial|length > 0 %}
+                                              <h2 class="section-header">
+                                                Compliance Indicators (Overall Period) -
+                                                {{ macros.put_year(company.financial[0].fiscal_year, company.financial[-1].fiscal_year) }}
+                                              </h2>
+                                            {% else %}
+                                              <h2 class="section-header">
+                                                Compliance Indicators (Overall Period)
+                                              </h2>
+                                            {% endif %}
                                           </div>
+
+                                          <div class="financial-ratio-row">
+                                            {# Average filing delay #}
+                                            {% set value = company.compliance_indicators["avg_filing_delay"] %}
+                                            {% set css = "" %}
+                                            {% if value is not none %}
+                                              {% if value <= 90 %}
+                                                {% set css = "risk-low" %}
+                                              {% elif value <= 273 %}
+                                                {% set css = "risk-medium" %}
+                                              {% else %}
+                                                {% set css = "risk-high" %}
+                                              {% endif %}
+                                            {% endif %}
+                                            {{ macros.indicator_section(value, "avg_filing_delay", css) }}
+
+                                            {# Max filing delay #}
+                                            {% set value = company.compliance_indicators["max_filing_delay"] %}
+                                            {% set css = "" %}
+                                            {% if value is not none %}
+                                              {% if value <= 180 %}
+                                                {% set css = "risk-low" %}
+                                              {% elif value <= 273 %}
+                                                {% set css = "risk-medium" %}
+                                              {% else %}
+                                                {% set css = "risk-high" %}
+                                              {% endif %}
+                                            {% endif %}
+                                            {{ macros.indicator_section(value, "max_filing_delay", css) }}
+
+                                            {# Late filing frequency #}
+                                            {% set value = company.compliance_indicators["late_filing_frequency"] %}
+                                            {% set css = "" %}
+                                            {% if value is not none %}
+                                              {% if value < 0.2 %}
+                                                {% set css = "risk-low" %}
+                                              {% elif value <= 0.5 %}
+                                                {% set css = "risk-medium" %}
+                                              {% else %}
+                                                {% set css = "risk-high" %}
+                                              {% endif %}
+                                            {% endif %}
+                                            {{ macros.indicator_section(value, "late_filing_frequency", css) }}
+
+                                            {# Missing reporting years #}
+                                            {% set value = company.compliance_indicators["missing_reporting_years"] %}
+                                            {% set css = "" %}
+                                            {% if value is not none %}
+                                              {% if value == 0 %}
+                                                {% set css = "risk-low" %}
+                                              {% elif value <= 2 %}
+                                                {% set css = "risk-medium" %}
+                                              {% else %}
+                                                {% set css = "risk-high" %}
+                                              {% endif %}
+                                            {% endif %}
+                                            {{ macros.indicator_section(value, "missing_reporting_years", css) }}
+                                          </div>
+
+                                          {% if company.compliance_indicators.filing_delays %}
+                                            <div style="margin-top: 15px; padding-left: 20px;">
+                                              {% for fd in company.compliance_indicators.filing_delays %}
+                                                <div class="mb-2">
+                                                  <strong>{{ macros.put_year(fd.fiscal_year) }}:</strong><br>
+
+                                                  {% if fd.days is not none %}
+                                                    Filing delay: {{ fd.days|int }} days
+                                                    {% if fd.is_late %}
+                                                      <span class="badge bg-danger ms-1">Late (&gt; 9 months)</span>
+                                                    {% else %}
+                                                      <span class="badge bg-success ms-1">On time</span>
+                                                    {% endif %}
+                                                  {% else %}
+                                                    Filing delay: Not available
+                                                  {% endif %}
+                                                </div>
+                                              {% endfor %}
+                                            </div>
+                                          {% endif %}
+                                        {% else %}
+                                          <h2 class="section-header" style="margin-top: 25px;">Compliance Indicators (Overall Period)</h2>
+                                          <p style="padding-left:20px; color:#777;">No compliance data available.</p>
                                         {% endif %}
-                                      {% else %}
-                                        <h2 class="section-header" style="margin-top: 25px;">Compliance Indicators (Overall Period)</h2>
-                                        <p style="padding-left:20px; color:#777;">No compliance data available.</p>
-                                      {% endif %}
+
                                       {# ---------- Compliance end ---------- #}
 
                                     </div> {# col-lg-12 #}
