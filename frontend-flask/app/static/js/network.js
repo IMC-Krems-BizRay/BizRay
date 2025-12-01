@@ -210,7 +210,7 @@
       if (!params.nodes || params.nodes.length === 0) return;
       const nodeId = params.nodes[0];
       const [type, key] = nodeId.split(":");
-      expandNode(type, key, false);
+      expandNode(type, key, true);
     });
 
     // Detail panel on select
@@ -268,6 +268,7 @@
         }
 
         const sourceId = makeNodeId(type, key);
+        let anyNew = false;
 
         neighbours.forEach(n => {
           const parsed = parseNeighbour(n);
@@ -277,9 +278,22 @@
 
           if (!seenNodes.has(targetNodeId)) {
             const groupName = parsed.type.toLowerCase();
-            let title = `${parsed.type}\n${parsed.label}`;
-            if (parsed.type === "Manager" && parsed.extra && parsed.extra.date) {
-              title += `\nDOB: ${parsed.extra.date}`;
+            let title;
+
+            if (parsed.type === "Company") {
+              // Company hover → ONLY name
+              title = parsed.companyName || parsed.label;
+            }
+            else if (parsed.type === "Manager") {
+              // Manager hover → ONLY name + DOB
+              title = parsed.label;
+              if (parsed.extra && parsed.extra.date) {
+                title += `\nDOB: ${parsed.extra.date}`;
+              }
+            }
+            else {
+              // Address or unknown
+              title = `${parsed.type}\n${parsed.label}`;
             }
 
             nodes.add({
@@ -291,11 +305,13 @@
                 groupName === "address"
                   ? groupName
                   : "unknown",
-              title: `${parsed.companyName || parsed.label}\nID: ${parsed.key}`,
-              rawKey: parsed.key,         // <-- store the ID here for detail panel
+              title: title,           // <-- now correct per type
+              rawKey: parsed.key,     // <-- ID for detail panel only
               name: parsed.label
             });
+
             seenNodes.add(targetNodeId);
+            anyNew = true;
           }
 
           // undirected-looking edge, no arrows, avoid duplicate ID direction issues
@@ -310,13 +326,17 @@
         });
 
         // No message here even if nothing new was added.
-      })
-      .catch(err => {
-        console.error("Error expanding node", err);
-        if (showEmptyMessageForThisNode) {
-          showMessage("No connections available for this company.");
-        }
-      });
+      // Backend had neighbours but nothing new got added => tell user
+      if (!anyNew && showEmptyMessageForThisNode) {
+        showMessage("No further connections for this node.");
+      }
+    })
+    .catch(err => {
+      console.error("Error expanding node", err);
+      if (showEmptyMessageForThisNode) {
+        showMessage("No further connections for this node.");
+      }
+    });
   }
 
   function initialLoad() {
