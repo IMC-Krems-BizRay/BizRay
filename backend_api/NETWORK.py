@@ -25,16 +25,23 @@ def make_manager_key(m):
 
 #TODO: This doesn't always work properly
 def make_address_key(loc):
+    # print(type(loc))
+    if loc is None:
+        return "Unknown"
 
-    #  print(type(loc))
-    try:
-        street = loc["street"]
-        house_number = loc["house_number"]
-        city = loc["city"]
-        postal_code = loc["postal_code"]
-        return f'{street} {house_number}, {postal_code} {city}'.strip()
-    except Exception as e:
-        return str(e)
+    city = loc["city"]
+    postal_code = loc["postal_code"]
+    street = loc["street"]
+    house_number = loc["house_number"]
+
+    location_str = f'{postal_code} {city}'
+
+    if street:
+        if house_number:
+            location_str = f'{house_number} {street}, ' + location_str
+        location_str = f'{street}, ' + location_str
+
+    return location_str.strip()
 
 
 #THIS SHOULD ONLY BE RUN AT THE START!
