@@ -146,11 +146,14 @@
     const nodeId = makeNodeId(type, key);
 
     if (!seenNodes.has(nodeId)) {
+      const name = COMPANY_NAME || COMPANY_ID;
+      const title = `Company\nName: ${name}\nID: ${COMPANY_ID}`;
+
       nodes.add({
         id: nodeId,
-        label: COMPANY_NAME || COMPANY_ID,
+        label: name,
         group: "company",
-        title: `Company\nID: ${COMPANY_ID}`,
+        title: title,
         rawKey: COMPANY_ID,
         name: COMPANY_NAME
       });
@@ -278,18 +281,19 @@
 
           if (!seenNodes.has(targetNodeId)) {
             const groupName = parsed.type.toLowerCase();
-            let title;
+            let title = "";
 
             if (parsed.type === "Company") {
-              // Company hover → ONLY name
-              title = parsed.companyName || parsed.label;
+              const name = (parsed.extra && parsed.extra.companyName) ? parsed.extra.companyName : parsed.label;
+              title = `Company\nName: ${name}\nID: ${parsed.key}`;
             }
             else if (parsed.type === "Manager") {
-              // Manager hover → ONLY name + DOB
-              title = parsed.label;
+              title = `Manager\nName: ${parsed.label}`;
               if (parsed.extra && parsed.extra.date) {
                 title += `\nDOB: ${parsed.extra.date}`;
               }
+            } else if (parsed.type === "Address") {
+              title = `Address\n${parsed.label}`;
             }
             else {
               // Address or unknown
