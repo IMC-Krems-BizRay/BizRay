@@ -71,7 +71,7 @@
           return {
             type: "Company",
             key: g.company_id,
-            label: g.company_id,
+            label: g.company_name || g.company_id,
             extra: {
               deleted: g.deleted,
               last_filed_doc: g.last_filed_doc,
