@@ -45,34 +45,70 @@
   function parseNeighbour(neighbour) {
     if (!neighbour) return null;
 
-    let payload = neighbour.connected ?? neighbour.result ?? null;
-    if (!payload) return null;
+    // Backend can return:
+    // { result: { address_key: "..." } }
+    // { result: { manager_key: "..." } }
+    // { result: "{\"company_id\": \"154212h\", ...}" }  // glance JSON string
+    // or sometimes just the payload itself.
+    let payload = neighbour.connected ?? neighbour.result ?? neighbour;
 
-    // Backend sends:
-    // {"result": {"address_key": "'NoneType' object is not subscriptable"}}
-    // Detect this case directly:
-    if (
-      payload.address_key &&
-      typeof payload.address_key === "string" &&
-      payload.address_key.includes("NoneType")
-    ) {
+    // --- STRING CASE: glance JSON or error text ---
+    if (typeof payload === "string") {
+      // Old backend error case, keep this just in case
+      if (payload.includes("NoneType")) {
+        return {
+          type: "Address",
+          key: "unknown_address",
+          label: "Address unknown",
+        };
+      }
+
+      // Try to parse glance JSON: {"company_id": "...", ...}
+      try {
+        const g = JSON.parse(payload);
+
+        if (g && g.company_id) {
+          return {
+            type: "Company",
+            key: g.company_id,
+            label: g.company_id,
+            extra: {
+              deleted: g.deleted,
+              last_filed_doc: g.last_filed_doc,
+              missing_years: g.missing_years,
+              profit_loss: g.profit_loss,
+            },
+          };
+        }
+
+        // Unknown JSON shape – ignore
+        return null;
+      } catch (e) {
+        // Random string we don't know – ignore
+        return null;
+      }
+    }
+
+    // --- ADDRESS NODE ---
+    if (payload.address_key !== undefined) {
+      const ak = payload.address_key;
+
+      if (ak === null || ak === "" || (typeof ak === "string" && ak.includes("NoneType"))) {
+        return {
+          type: "Address",
+          key: "unknown_address",
+          label: "Address unknown",
+        };
+      }
+
       return {
         type: "Address",
-        key: "unknown_address",
-        label: "Address unknown"
+        key: ak,
+        label: ak,
       };
     }
 
-    // Normal address
-    if ("address_key" in payload) {
-      return {
-        type: "Address",
-        key: payload.address_key,
-        label: payload.address_key
-      };
-    }
-
-    // Manager
+    // --- MANAGER NODE ---
     if (payload.manager_key) {
       const parts = payload.manager_key.split("|");
       const date = parts[0] || "";
@@ -81,21 +117,23 @@
         type: "Manager",
         key: payload.manager_key,
         label: name,
-        extra: { date: date }
+        extra: { date: date },
       };
     }
 
-    // Company
+    // --- COMPANY NODE AS FULL OBJECT (if backend ever returns it) ---
     if (payload.company_id) {
       return {
         type: "Company",
         key: payload.company_id,
-        label: payload.company_id
+        label: payload.company_id,
       };
     }
 
+    // Fallback – ignore unknown shapes
     return null;
   }
+
 
 
   function addCentralCompanyNode() {
