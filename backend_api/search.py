@@ -26,7 +26,7 @@ def check_name_search_cache(term):
 
 def detect_search_mode(term: str) -> SearchMode:
     term = term.strip()
-    return SearchMode.FNR if re.fullmatch(r"\d{5,6}[a-zA-Z]", term) else SearchMode.NAME
+    return SearchMode.FNR if re.fullmatch(r"\d{1,6}[a-zA-Z]", term) else SearchMode.NAME
 
 def search(term: str, page: int) -> dict:
     mode = detect_search_mode(term)
