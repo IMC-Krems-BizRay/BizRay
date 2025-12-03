@@ -96,32 +96,38 @@
                                 <div class="description">
                                   <div class="row">
                                     <div class="col-lg-12">
+
+                                      {# ---------- SAFE ALIASES ---------- #}
+                                      {% set basic = company.get('basic_info', {}) %}
+                                      {% set managers = company.get('management') or [] %}
+                                      {% set financial_list = company.get('financial') or [] %}
+                                      {% set compliance = company.get('compliance_indicators') %}
+
                                       {# ---------- BASIC COMPANY INFO ---------- #}
-                                      <p><strong>Company Name:</strong> {{ company.basic_info.company_name }}</p>
-                                      <p><strong>Legal Form:</strong> {{ company.basic_info.legal_form }}</p>
-                                      <p><strong>Company Number:</strong> {{ company.basic_info.company_number }}</p>
-                                      <p><strong>European ID:</strong> {{ company.basic_info.european_id }}</p>
+                                      <p><strong>Company Name:</strong> {{ basic.get('company_name', 'Unknown') }}</p>
+                                      <p><strong>Legal Form:</strong> {{ basic.get('legal_form', 'Unknown') }}</p>
+                                      <p><strong>Company Number:</strong> {{ basic.get('company_number', 'Unknown') }}</p>
+                                      <p><strong>European ID:</strong> {{ basic.get('european_id', 'Unknown') }}</p>
 
                                       {# ---------- MANAGEMENT (OVERVIEW, COLLAPSIBLE AT TOP) ---------- #}
-                                      {% set managers = company.management or [] %}
                                       {% if managers %}
                                         <div class="collapse-block" style="margin-top: 20px;">
-                                          <a class="btn btn-primary"
-                                             data-bs-toggle="collapse"
-                                             href="#collapseManagementOverview"
-                                             role="button"
-                                             aria-expanded="false"
-                                             aria-controls="collapseManagementOverview">
+                                          <a class="btn btn-primary collapsed"
+                                            data-bs-toggle="collapse"
+                                            href="#collapseManagementOverview"
+                                            role="button"
+                                            aria-expanded="false"
+                                            aria-controls="collapseManagementOverview">
                                             <strong>Management</strong>
                                           </a>
 
-                                          <div class="collapse show" id="collapseManagementOverview">
+                                          <div class="collapse" id="collapseManagementOverview">
                                             <div class="card card-body">
                                               {% for m in managers %}
                                                 <div class="mb-3">
-                                                  <p><strong>Name:</strong> {{ m.name or 'Unknown' }}</p>
-                                                  <p><strong>Role:</strong> {{ m.role or 'Unknown' }}</p>
-                                                  <p><strong>Appointed:</strong> {{ m.appointed_on or 'Unknown' }}</p>
+                                                  <p><strong>Name:</strong> {{ m.get('name', 'Unknown') }}</p>
+                                                  <p><strong>Role:</strong> {{ m.get('role', 'Unknown') }}</p>
+                                                  <p><strong>Appointed:</strong> {{ m.get('appointed_on', 'Unknown') }}</p>
                                                 </div>
                                                 {% if not loop.last %}
                                                   <hr>
@@ -138,12 +144,14 @@
                                       {# ---------- Management end ---------- #}
 
                                       {# ---------- FINANCIAL INDICATORS (LATEST YEAR) ---------- #}
-                                      {% if company.financial | length > 0 %}
-                                        {% set latest_year = company.financial[-1] %}
+                                      {% if financial_list|length > 0 %}
+                                        {% set latest_year = financial_list[-1] %}
+                                        {% set fy_latest = latest_year.get('fiscal_year', {}) %}
 
                                         <div style="margin-top: 25px;">
                                           <h2 class="section-header">
-                                            Financial Risk Indicators - {{ macros.put_year(latest_year.fiscal_year) }}
+                                            Financial Risk Indicators -
+                                            {{ macros.put_year(fy_latest) }}
                                           </h2>
                                         </div>
 
@@ -151,27 +159,35 @@
                                           {% set css = "" %}
 
                                           {# Working capital #}
-                                          {% set value = latest_year["working_capital"] %}
-                                          {% if value > 0 %}
-                                            {% set css = "risk-low" %}
+                                          {% set value = latest_year.get("working_capital") %}
+                                          {% if value is not none %}
+                                            {% if value > 0 %}
+                                              {% set css = "risk-low" %}
+                                            {% else %}
+                                              {% set css = "risk-medium" %}
+                                            {% endif %}
                                           {% else %}
-                                            {% set css = "risk-medium" %}
+                                            {% set css = "" %}
                                           {% endif %}
                                           {{ macros.indicator_section(value, "working_capital", css) }}
 
                                           {# Debt-to-equity #}
-                                          {% set value = latest_year["debt_to_equity_ratio"] %}
-                                          {% if value < 1 %}
-                                            {% set css = "risk-low" %}
-                                          {% elif value <= 2 %}
-                                            {% set css = "risk-medium" %}
+                                          {% set value = latest_year.get("debt_to_equity_ratio") %}
+                                          {% if value is not none %}
+                                            {% if value < 1 %}
+                                              {% set css = "risk-low" %}
+                                            {% elif value <= 2 %}
+                                              {% set css = "risk-medium" %}
+                                            {% else %}
+                                              {% set css = "risk-high" %}
+                                            {% endif %}
                                           {% else %}
-                                            {% set css = "risk-high" %}
+                                            {% set css = "" %}
                                           {% endif %}
                                           {{ macros.indicator_section(value, "debt_to_equity_ratio", css) }}
 
                                           {# Equity ratio #}
-                                          {% set value = latest_year["equity_ratio"] %}
+                                          {% set value = latest_year.get("equity_ratio") %}
                                           {% if value is not none %}
                                             {% if value < 25 %}
                                               {% set css = "risk-high" %}
@@ -186,7 +202,7 @@
                                           {{ macros.indicator_section(value, "equity_ratio", css) }}
 
                                           {# Current ratio #}
-                                          {% set value = latest_year["current_ratio"] %}
+                                          {% set value = latest_year.get("current_ratio") %}
                                           {% if value is not none %}
                                             {% if value < 1 %}
                                               {% set css = "risk-high" %}
@@ -201,7 +217,7 @@
                                           {{ macros.indicator_section(value, "current_ratio", css) }}
 
                                           {# Quick ratio #}
-                                          {% set value = latest_year["quick_ratio"] %}
+                                          {% set value = latest_year.get("quick_ratio") %}
                                           {% if value is not none %}
                                             {% if value < 0.5 %}
                                               {% set css = "risk-high" %}
@@ -216,7 +232,7 @@
                                           {{ macros.indicator_section(value, "quick_ratio", css) }}
 
                                           {# Cash ratio #}
-                                          {% set value = latest_year["cash_ratio"] %}
+                                          {% set value = latest_year.get("cash_ratio") %}
                                           {% if value is not none %}
                                             {% if value < 0.2 %}
                                               {% set css = "risk-high" %}
@@ -231,7 +247,7 @@
                                           {{ macros.indicator_section(value, "cash_ratio", css) }}
 
                                           {# Fixed asset coverage #}
-                                          {% set value = latest_year["fixed_asset_coverage"] %}
+                                          {% set value = latest_year.get("fixed_asset_coverage") %}
                                           {% if value is not none %}
                                             {% if value > 100 %}
                                               {% set css = "risk-low" %}
@@ -246,61 +262,41 @@
                                           {{ macros.indicator_section(value, "fixed_asset_coverage", css) }}
                                         </div>
 
-                                        {# ---------- TREND INDICATORS (OVERALL PERIOD) ---------- #}
-                                        {% if company.financial|length > 1 and overview_trend %}
-                                          {% set first_year = company.financial[0].fiscal_year %}
-                                          {% set last_year  = company.financial[-1].fiscal_year %}
-
-                                          <div style="margin-top: 25px;">
-                                            <h2 class="section-header">
-                                              Trend Indicators (Overall Period) -
-                                              {{ macros.put_year(first_year, last_year) }}
-                                            </h2>
-                                          </div>
-
-                                          {% set trend_keys = [
-                                            'asset_growth_rate',
-                                            'equity_growth_rate',
-                                            'equity_ratio_trend',
-                                            'total_assets_trend',
-                                            'working_capital_trend',
-                                            'current_ratio_development',
-                                            'debt_to_equity_trend'
-                                          ] %}
-
-                                          <div class="financial-ratio-row">
-                                            {% for key in trend_keys %}
-                                              {% set ind = overview_trend.get(key) %}
-                                              {% set css = "" %}
-
-                                              {% if ind and ind.value is not none %}
-                                                {% set val = ind.value %}
-
-                                                {# Percent-based metrics #}
-                                                {% if ind.is_percent %}
-                                                  {% if val < 0 %}
-                                                    {% set css = "risk-high" %}
-                                                  {% elif val < 5 %}
-                                                    {% set css = "risk-medium" %}
-                                                  {% else %}
-                                                    {% set css = "risk-low" %}
-                                                  {% endif %}
-                                                {% else %}
-                                                  {# Absolute metrics: negative = bad, positive = ok #}
-                                                  {% if val < 0 %}
-                                                    {% set css = "risk-high" %}
-                                                  {% else %}
-                                                    {% set css = "risk-low" %}
-                                                  {% endif %}
-                                                {% endif %}
-                                              {% endif %}
-
-                                              {{ macros.indicator_section(ind, key, css) }}
-                                            {% endfor %}
+                                        {# ---------- NEW FINANCIAL TREND CHARTS (LINE GRAPHS) ---------- #}
+                                        {% if financial_list|length > 1 %}
+                                          <div id="financial-trend-section" style="margin-top: 30px;">
+                                            <h2 class="section-header">Financial Trends (Line Graphs)</h2>
+                                      
+                                            <div class="row" style="min-height: 260px;">
+                                              <div class="col-md-6 mb-4">
+                                                <h5>Total Assets</h5>
+                                                <div style="height: 220px;">
+                                                  <canvas id="chartTotalAssets"></canvas>
+                                                </div>
+                                              </div>
+                                              <div class="col-md-6 mb-4">
+                                                <h5>Equity</h5>
+                                                <div style="height: 220px;">
+                                                  <canvas id="chartEquity"></canvas>
+                                                </div>
+                                              </div>
+                                              <div class="col-md-6 mb-4">
+                                                <h5>Equity Ratio (%)</h5>
+                                                <div style="height: 220px;">
+                                                  <canvas id="chartEquityRatio"></canvas>
+                                                </div>
+                                              </div>
+                                              <div class="col-md-6 mb-4">
+                                                <h5>Current Ratio</h5>
+                                                <div style="height: 220px;">
+                                                  <canvas id="chartCurrentRatio"></canvas>
+                                                </div>
+                                              </div>
+                                            </div>
                                           </div>
                                         {% else %}
-                                          <h2 class="section-header" style="margin-top: 25px;">Trend Indicators (Overall Period)</h2>
-                                          <p style="padding-left:20px; color:#777;">No trend data available.</p>
+                                          <h2 class="section-header" style="margin-top: 25px;">Financial Trends (Line Graphs)</h2>
+                                          <p style="padding-left:20px; color:#777;">No trend data available (only one year).</p>
                                         {% endif %}
 
                                       {% else %}
@@ -308,108 +304,109 @@
                                         <h2 class="section-header" style="margin-top: 25px;">Financial Risk Indicators</h2>
                                         <p style="padding-left:20px; color:#777;">No financial data available.</p>
 
-                                        <h2 class="section-header" style="margin-top: 25px;">Trend Indicators (Overall Period)</h2>
+                                        <h2 class="section-header" style="margin-top: 25px;">Financial Trends (Line Graphs)</h2>
                                         <p style="padding-left:20px; color:#777;">No trend data available.</p>
                                       {% endif %}
 
                                       {# ---------- COMPLIANCE INDICATORS (OVERALL PERIOD) ---------- #}
-                                          {% if company.compliance_indicators %}
-                                          <div style="margin-top: 25px;">
-                                            {% if company.financial is defined and company.financial|length > 0 %}
-                                              <h2 class="section-header">
-                                                Compliance Indicators (Overall Period) -
-                                                {{ macros.put_year(company.financial[0].fiscal_year, company.financial[-1].fiscal_year) }}
-                                              </h2>
-                                            {% else %}
-                                              <h2 class="section-header">
-                                                Compliance Indicators (Overall Period)
-                                              </h2>
-                                            {% endif %}
-                                          </div>
-
-                                          <div class="financial-ratio-row">
-                                            {# Average filing delay #}
-                                            {% set value = company.compliance_indicators["avg_filing_delay"] %}
-                                            {% set css = "" %}
-                                            {% if value is not none %}
-                                              {% if value <= 90 %}
-                                                {% set css = "risk-low" %}
-                                              {% elif value <= 273 %}
-                                                {% set css = "risk-medium" %}
-                                              {% else %}
-                                                {% set css = "risk-high" %}
-                                              {% endif %}
-                                            {% endif %}
-                                            {{ macros.indicator_section(value, "avg_filing_delay", css) }}
-
-                                            {# Max filing delay #}
-                                            {% set value = company.compliance_indicators["max_filing_delay"] %}
-                                            {% set css = "" %}
-                                            {% if value is not none %}
-                                              {% if value <= 180 %}
-                                                {% set css = "risk-low" %}
-                                              {% elif value <= 273 %}
-                                                {% set css = "risk-medium" %}
-                                              {% else %}
-                                                {% set css = "risk-high" %}
-                                              {% endif %}
-                                            {% endif %}
-                                            {{ macros.indicator_section(value, "max_filing_delay", css) }}
-
-                                            {# Late filing frequency #}
-                                            {% set value = company.compliance_indicators["late_filing_frequency"] %}
-                                            {% set css = "" %}
-                                            {% if value is not none %}
-                                              {% if value < 0.2 %}
-                                                {% set css = "risk-low" %}
-                                              {% elif value <= 0.5 %}
-                                                {% set css = "risk-medium" %}
-                                              {% else %}
-                                                {% set css = "risk-high" %}
-                                              {% endif %}
-                                            {% endif %}
-                                            {{ macros.indicator_section(value, "late_filing_frequency", css) }}
-
-                                            {# Missing reporting years #}
-                                            {% set value = company.compliance_indicators["missing_reporting_years"] %}
-                                            {% set css = "" %}
-                                            {% if value is not none %}
-                                              {% if value == 0 %}
-                                                {% set css = "risk-low" %}
-                                              {% elif value <= 2 %}
-                                                {% set css = "risk-medium" %}
-                                              {% else %}
-                                                {% set css = "risk-high" %}
-                                              {% endif %}
-                                            {% endif %}
-                                            {{ macros.indicator_section(value, "missing_reporting_years", css) }}
-                                          </div>
-
-                                          {% if company.compliance_indicators.filing_delays %}
-                                            <div style="margin-top: 15px; padding-left: 20px;">
-                                              {% for fd in company.compliance_indicators.filing_delays %}
-                                                <div class="mb-2">
-                                                  <strong>{{ macros.put_year(fd.fiscal_year) }}:</strong><br>
-
-                                                  {% if fd.days is not none %}
-                                                    Filing delay: {{ fd.days|int }} days
-                                                    {% if fd.is_late %}
-                                                      <span class="badge bg-danger ms-1">Late (&gt; 9 months)</span>
-                                                    {% else %}
-                                                      <span class="badge bg-success ms-1">On time</span>
-                                                    {% endif %}
-                                                  {% else %}
-                                                    Filing delay: Not available
-                                                  {% endif %}
-                                                </div>
-                                              {% endfor %}
-                                            </div>
+                                      {% if compliance %}
+                                        <div style="margin-top: 25px;">
+                                          {% if financial_list|length > 0 %}
+                                            {% set first_fy = financial_list[0].get('fiscal_year', {}) %}
+                                            {% set last_fy  = financial_list[-1].get('fiscal_year', {}) %}
+                                            <h2 class="section-header">
+                                              Compliance Indicators (Overall Period) -
+                                              {{ macros.put_year(first_fy, last_fy) }}
+                                            </h2>
+                                          {% else %}
+                                            <h2 class="section-header">
+                                              Compliance Indicators (Overall Period)
+                                            </h2>
                                           {% endif %}
-                                        {% else %}
-                                          <h2 class="section-header" style="margin-top: 25px;">Compliance Indicators (Overall Period)</h2>
-                                          <p style="padding-left:20px; color:#777;">No compliance data available.</p>
-                                        {% endif %}
+                                        </div>
 
+                                        <div class="financial-ratio-row">
+                                          {# Average filing delay #}
+                                          {% set value = compliance.get("avg_filing_delay") %}
+                                          {% set css = "" %}
+                                          {% if value is not none %}
+                                            {% if value <= 90 %}
+                                              {% set css = "risk-low" %}
+                                            {% elif value <= 273 %}
+                                              {% set css = "risk-medium" %}
+                                            {% else %}
+                                              {% set css = "risk-high" %}
+                                            {% endif %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "avg_filing_delay", css) }}
+
+                                          {# Max filing delay #}
+                                          {% set value = compliance.get("max_filing_delay") %}
+                                          {% set css = "" %}
+                                          {% if value is not none %}
+                                            {% if value <= 180 %}
+                                              {% set css = "risk-low" %}
+                                            {% elif value <= 273 %}
+                                              {% set css = "risk-medium" %}
+                                            {% else %}
+                                              {% set css = "risk-high" %}
+                                            {% endif %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "max_filing_delay", css) }}
+
+                                          {# Late filing frequency #}
+                                          {% set value = compliance.get("late_filing_frequency") %}
+                                          {% set css = "" %}
+                                          {% if value is not none %}
+                                            {% if value < 0.2 %}
+                                              {% set css = "risk-low" %}
+                                            {% elif value <= 0.5 %}
+                                              {% set css = "risk-medium" %}
+                                            {% else %}
+                                              {% set css = "risk-high" %}
+                                            {% endif %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "late_filing_frequency", css) }}
+
+                                          {# Missing reporting years #}
+                                          {% set value = compliance.get("missing_reporting_years") %}
+                                          {% set css = "" %}
+                                          {% if value is not none %}
+                                            {% if value == 0 %}
+                                              {% set css = "risk-low" %}
+                                            {% elif value <= 2 %}
+                                              {% set css = "risk-medium" %}
+                                            {% else %}
+                                              {% set css = "risk-high" %}
+                                            {% endif %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "missing_reporting_years", css) }}
+                                        </div>
+
+                                        {% if compliance.filing_delays %}
+                                          <div style="margin-top: 15px; padding-left: 20px;">
+                                            {% for fd in compliance.filing_delays %}
+                                              <div class="mb-2">
+                                                <strong>{{ macros.put_year(fd.fiscal_year) }}:</strong><br>
+
+                                                {% if fd.days is not none %}
+                                                  Filing delay: {{ fd.days|int }} days
+                                                  {% if fd.is_late %}
+                                                    <span class="badge bg-danger ms-1">Late (&gt; 9 months)</span>
+                                                  {% else %}
+                                                    <span class="badge bg-success ms-1">On time</span>
+                                                  {% endif %}
+                                                {% else %}
+                                                  Filing delay: Not available
+                                                {% endif %}
+                                              </div>
+                                            {% endfor %}
+                                          </div>
+                                        {% endif %}
+                                      {% else %}
+                                        <h2 class="section-header" style="margin-top: 25px;">Compliance Indicators (Overall Period)</h2>
+                                        <p style="padding-left:20px; color:#777;">No compliance data available.</p>
+                                      {% endif %}
                                       {# ---------- Compliance end ---------- #}
 
                                     </div> {# col-lg-12 #}
@@ -420,6 +417,7 @@
                           </div>           {# thumb #}
                         </div>             {# wrapper div #}
                       </li>
+
 
 
 
@@ -768,4 +766,31 @@
       </div>
     </div>
   {% endif %}
+
 {% endblock %}
+
+{% block extra_scripts %}
+    {{ super() }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
+    {# <-- load your external js file -- #}
+    <script src="{{ url_for('static', filename='js/company_charts.js') }}"></script>
+
+    <script>
+        // send your Jinja financial data into the external JS file
+        const FIN_DATA = {{ company.get('financial') | default([], true) | tojson }};
+        window.addEventListener("DOMContentLoaded", () => {
+            window.renderCompanyCharts(FIN_DATA);
+        });
+    </script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
