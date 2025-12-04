@@ -5,12 +5,12 @@ from backend_api.config import DB_USER, DB_PASS, URI, DB
 driver = GraphDatabase.driver(URI, auth=(DB_USER, DB_PASS))
 
 def make_manager_key(m):
-    try:
-        DOB = m["date_of_birth"]
-        name = m["name"]
-        return f'{DOB}|{name}'.strip()
-    except Exception as e:
-        return str(e)
+    date_of_birth = m["date_of_birth"]
+    if not date_of_birth:
+        return "Date of birth is unavailable"
+
+    name = m["name"]
+    return f'{date_of_birth}|{name}'.strip()
 
 
 #TODO: This doesn't always work properly
@@ -70,20 +70,28 @@ def get_risk_indicators(data):
 
     company_id = data["basic_info"]["company_number"]
     company_name = data["basic_info"]["company_name"]
+    is_deleted = data["basic_info"]["is_deleted"]
 
-    try:
-        active = data["basic_info"]["is_deleted"]
+    if not data["financial"]:
+        return {
+            "company_id": company_id,
+            "company_name": company_name,
+            "deleted": is_deleted,
+            "error": "Financial data is unavailable"
+        }
+   
+    last_filed_doc = data["financial"][-1]["submission_date"] #most recent year
+    missing_years = data["compliance_indicators"]["missing_reporting_years"]
+    profit_loss = data["financial"][-1]["profit_loss"] 
 
-        last_filed_doc = data["financial"][-1]["submission_date"]
-
-        missing_years = data["compliance_indicators"]["missing_reporting_years"]
-
-        profit_loss = data["financial"][-1]["profit_loss"] #most recent year
-
-        return {"company_id": company_id, "company_name": company_name, "deleted": active, "last_file": last_filed_doc, "missing_years": missing_years, "profit_loss": profit_loss}
-
-    except Exception as e:
-        return {"company_id": company_id, "company_name": company_name, "error": "Data unavailable"}
+    return {
+        "company_id": company_id,
+        "company_name": company_name,
+        "deleted": is_deleted,
+        "last_file": last_filed_doc,
+        "missing_years": missing_years,
+        "profit_loss": profit_loss
+    }
 
 
 def CREATE_COMPANY(data):
