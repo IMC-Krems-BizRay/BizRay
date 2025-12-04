@@ -6,3 +6,9 @@ load_dotenv(dotenv_path=dotenv_path)
 
 API_KEY = os.getenv('API_KEY')
 WSDL_URL = os.getenv('WSDL_URL')
+
+
+URI = os.getenv('DB_URI')
+DB_USER = os.getenv('DB_USER')
+DB_PASS = os.getenv('DB_PASS')
+DB = 'neo4j'

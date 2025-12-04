@@ -1,18 +1,8 @@
 from neo4j import GraphDatabase
 import json
-from dotenv import load_dotenv
-import os
-
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(dotenv_path=dotenv_path)
-
-URI = os.getenv('DB_URI')
-DB_USER = os.getenv('DB_USER')
-DB_PASS = os.getenv('DB_PASS')
-DB= 'neo4j'
-
-AUTH = (DB_USER, DB_PASS)
-driver = GraphDatabase.driver(URI, auth=AUTH)
+from backend_api.config import DB_USER, DB_PASS, URI, DB
+ 
+driver = GraphDatabase.driver(URI, auth=(DB_USER, DB_PASS))
 
 def make_manager_key(m):
     try:
