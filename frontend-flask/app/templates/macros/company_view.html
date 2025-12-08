@@ -123,19 +123,27 @@
   </div>
 {% endmacro %}
 
+{% macro format_number(value) %}
+  {% if value is not none %}
+    {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
+  {% else %}
+    Not available
+  {% endif %}
+{% endmacro %}
+
 {% macro put_value(value, is_percent) %}
   {% if value is not none %}
     {% if is_percent %}
       {% set pct = value * 100 %}
       {% if pct > 0 %}
-        +{{ "%.2f"|format(pct) }}%
+        +{{ "{:,.2f}".format(pct).replace(",", " ").replace(".", ",") }}%
       {% elif pct < 0 %}
-        {{ "%.2f"|format(pct) }}%
+        {{ "{:,.2f}".format(pct).replace(",", " ").replace(".", ",") }}%
       {% else %}
         0%
       {% endif %}
     {% else %}
-      {{ "%.2f"|format(value) }}
+      {{ format_number(value) }}
     {% endif %}
   {% else %}
     Not available
