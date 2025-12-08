@@ -20,21 +20,19 @@ window.renderCompanyCharts = function (rawData) {
         return { labels, values };
     }
 
+    // Format number with space as thousands separator and comma as decimal separator
+    function formatNumber(value) {
+        if (!isFinite(value)) return "0";
+        const abs = Math.abs(value);
+        const parts = abs.toFixed(2).split(".");
+        const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        return integerPart + "," + parts[1];
+    }
+
     function formatDiff(diff) {
-    if (!isFinite(diff)) return "0";
-
-    const sign = diff > 0 ? "+" : diff < 0 ? "−" : "";
-    const abs = Math.abs(diff);
-
-    // Always show at least two decimals for small values
-    if (abs < 1) return sign + abs.toFixed(2);
-
-    // Normal readable formatting
-    if (abs >= 1_000_000_000) return sign + (abs / 1_000_000_000).toFixed(1) + "B";
-    if (abs >= 1_000_000)     return sign + (abs / 1_000_000).toFixed(1) + "M";
-    if (abs >= 1_000)         return sign + (abs / 1_000).toFixed(0) + "k";
-
-    return sign + abs.toFixed(2);
+        if (!isFinite(diff)) return "0";
+        const sign = diff > 0 ? "+" : diff < 0 ? "−" : "";
+        return sign + formatNumber(Math.abs(diff));
     }
 
 
@@ -100,7 +98,14 @@ window.renderCompanyCharts = function (rawData) {
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { ticks: { autoSkip: false } },
-                    y: { beginAtZero: false }
+                    y: { 
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return formatNumber(value);
+                            }
+                        }
+                    }
                 }
             },
             plugins: [ChangeLabelPlugin]

@@ -45,6 +45,11 @@
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
+@keyframes graph-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ─── HEADER LAYOUT ───────────────────── */
 header.header-area .main-nav {
   display: flex;
@@ -260,6 +265,26 @@ header.background-header .main-nav .nav li .main-white-button > a {
   border-radius: 8px;           /* optional: leicht abgerundete Ecken */
   font-size: 1.5rem;            /* Schriftgröße */
   font-weight: 700;             /* Fett */
+  display: flex;                /* Flexbox für Spinner-Ausrichtung */
+  align-items: center;          /* Vertikal zentrieren */
+  gap: 12px;                    /* Abstand zwischen Text und Spinner */
+}
+
+/* Network header loading spinner */
+.network-header-spinner {
+  display: none;  
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(42, 42, 42, 0.2);
+  border-top-color: #2a2a2a;
+  border-radius: 50%;
+  animation: graph-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* When shown, display as inline-block */
+.network-header-spinner.show {
+  display: inline-block;
 }
 
 /* ------------------ Collapse Button Block ------------------ */
@@ -571,3 +596,4 @@ header.background-header .main-nav .nav li .main-white-button > a {
     font-weight: 100 900;
     font-style: italic;
 }
+

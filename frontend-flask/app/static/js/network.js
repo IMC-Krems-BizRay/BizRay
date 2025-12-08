@@ -10,6 +10,49 @@
   const graphContainer = document.getElementById("company-graph");
   if (!graphContainer) return;
 
+  // Get element references dynamically to handle tab system
+  function getGraphLoader() {
+    return document.getElementById("graph-loader");
+  }
+
+  function getNetworkHeaderLoader() {
+    return document.getElementById("network-header-loader");
+  }
+
+  function showGraphLoader() {
+    const graphLoader = getGraphLoader();
+    if (graphLoader) {
+      graphLoader.style.display = "block";
+      console.log("Graph loader shown");
+    } else {
+      console.error("Graph loader element not found!");
+    }
+    // Show header spinner next to "Network" word
+    const networkHeaderLoader = getNetworkHeaderLoader();
+    if (networkHeaderLoader) {
+      networkHeaderLoader.style.display = "inline-block";
+      networkHeaderLoader.classList.add("show");
+      console.log("Network header loader shown");
+    } else {
+      console.warn("Network header loader element not found - may not be in DOM yet");
+    }
+  }
+
+  function hideGraphLoader() {
+    const graphLoader = getGraphLoader();
+    if (graphLoader) {
+      graphLoader.style.display = "none";
+      console.log("Graph loader hidden");
+    }
+    // Hide header spinner
+    const networkHeaderLoader = getNetworkHeaderLoader();
+    if (networkHeaderLoader) {
+      networkHeaderLoader.style.display = "none";
+      networkHeaderLoader.classList.remove("show");
+      console.log("Network header loader hidden");
+    }
+  }
+
   const nodes = new vis.DataSet();
   const edges = new vis.DataSet();
   const seenNodes = new Set();
@@ -213,7 +256,8 @@
       if (!params.nodes || params.nodes.length === 0) return;
       const nodeId = params.nodes[0];
       const [type, key] = nodeId.split(":");
-      expandNode(type, key, true);
+      // expandNode will show the loader when fetching connections
+      expandNode(type, key, false);
     });
 
     // Detail panel on select
@@ -254,6 +298,7 @@
 
   // showEmptyMessageForThisNode = true ONLY for the initial company load
   function expandNode(type, key, showEmptyMessageForThisNode) {
+     showGraphLoader();
     clearMessage();
 
     return fetchNeighbours(key, type)
@@ -340,18 +385,34 @@
       if (showEmptyMessageForThisNode) {
         showMessage("No further connections for this node.");
       }
+    })
+    .finally(() => {
+      hideGraphLoader();  // ← HIDE SPINNER
     });
   }
 
   function initialLoad() {
-    addCentralCompanyNode();
-    initNetwork();
+    // Show loader immediately when starting to load the graph
+    showGraphLoader();
+    
+    // Use setTimeout to ensure loader is visible before network initialization
+    setTimeout(() => {
+      addCentralCompanyNode();
+      initNetwork();
 
-    // First and ONLY time we allow the "no connections" message.
-    expandNode("Company", COMPANY_ID, true);
+      // First and ONLY time we allow the "no connections" message.
+      // expandNode will keep the loader visible while fetching
+      expandNode("Company", COMPANY_ID, true);
+    }, 50);
   }
 
   // Script is loaded after the DOM elements in the template.
-  initialLoad();
+  // Wait for DOM to be fully ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialLoad);
+  } else {
+    initialLoad();
+  }
 })();
+
 
