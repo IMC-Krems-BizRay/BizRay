@@ -260,6 +260,19 @@
                                             {% set css = "" %}
                                           {% endif %}
                                           {{ macros.indicator_section(value, "fixed_asset_coverage", css) }}
+
+                                          {# Retained Earnings development #}
+                                          {% set value = latest_year.get("profit_loss_development") %}
+                                          {% if value is not none %}
+                                            {% if value >= 0 %}
+                                              {% set css = "risk-low" %}
+                                            {% else %}
+                                              {% set css = "risk-high" %}
+                                            {% endif %}
+                                          {% else %}
+                                            {% set css = "" %}
+                                          {% endif %}
+                                          {{ macros.indicator_section(value, "profit_loss_development", css) }}
                                         </div>
 
                                         {# ---------- NEW FINANCIAL TREND CHARTS (LINE GRAPHS) ---------- #}
@@ -504,7 +517,7 @@
 
                                           <!-- Graph canvas -->
                                           <div id="company-graph"
-                                               style="width: 100%; height: 480px; border-radius: 12px; border: 1px solid #ddd; background: #8fbde9; position: relative;">
+                                               style="width: 100%; height: 480px; border-radius: 12px; border: 1px solid #ddd; position: relative;">
                                               <!--loader-->
                                                <div id="graph-loader" style="
                                                    position:absolute;
@@ -554,7 +567,7 @@
 
                                           <!-- Optional detail panel -->
                                           <div id="node-detail"
-                                               style="margin-top: 12px; font-size: 0.9rem; padding-left: 20px;">
+                                               style="height: 200px;margin-top: 12px; font-size: 0.9rem; padding-left: 20px;">
                                           </div>
 
                                           {# Include vis-network and our graph JS only when unlocked #}
@@ -705,7 +718,10 @@
                                                   {{ macros.asset_row(year["share_capital"], "Share capital", False) }}
                                                   {{ macros.asset_row(year["capital_reserves"], "Capital reserves", False) }}
                                                   {{ macros.asset_row(year["revenue_reserves"], "Revenue reserves", False) }}
-                                                  {{ macros.asset_row(year["retained_earnings"], "Retained earnings / net loss", False) }}
+                                                  {{ macros.asset_row(year["retained_earnings"], "Retained earnings", False) }}
+                                                    <h6 class="asset-label-h6" style="margin-top: 10px;">Retained Earnings Breakdown</h6>
+                                                    {{ macros.asset_row(year["retained_earnings_subitem"], "Retained earnings Opening", False) }}
+                                                    {{ macros.asset_row(year["retained_earnings"]-year["retained_earnings_subitem"], "Retained earnings current year", False) }}
                                                   {{ macros.asset_row(year["liabilities"], "Liabilities", True) }}
                                                   {{ macros.asset_row(year["deferred_income"], "Deferred income / accrued liabilities", True) }}
                                                   {{ macros.asset_row(year["deferred_tax_liabilities"], "Deferred tax liabilities", True) }}
