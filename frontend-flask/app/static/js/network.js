@@ -75,6 +75,16 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
+  // function for formating numbers in the detail panel
+  function formatEuroNumber(value) {
+    if (value == null || isNaN(value)) return "not available";
+
+    let formatted = Number(value).toFixed(2);
+    formatted = formatted.replace(".", ",");
+    formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+    return formatted;
+  }
 
   function makeNodeId(type, key) {
     return `${type}:${key}`;
@@ -123,7 +133,7 @@
               companyId: id,
               companyName: name,
               deleted: g.deleted,
-              last_filed_doc: g.last_filed_doc,
+              last_file: g.last_file,
               missing_years: g.missing_years,
               profit_loss: g.profit_loss,
             },
@@ -275,8 +285,19 @@
         panel.innerHTML = `
           <h5 class="network-detail-title">Selected Company</h5>
           <p><strong>Name:</strong> ${escapeHtml(node.label)}</p>
-          <p><strong>ID:</strong> ${escapeHtml(node.rawKey)}</p>
+          <p><strong>FNR:</strong> ${escapeHtml(node.rawKey)}</p>
         `;
+        if (node.extra) {
+            panel.innerHTML += `
+              <p><strong>Status:</strong>  ${node.extra.deleted === true ? "Not Active" :
+                                              node.extra.deleted === false ? "Active" :
+                                              "not available"
+                                            }</p>
+              <p><strong>Last filed XML:</strong> ${escapeHtml(node.extra.last_file || "not available")}</p>
+              <p><strong>Missing years:</strong> ${node.extra.missing_years ?? "not available"}</p>
+              <p><strong>Retained Earnings:</strong> ${node.extra.profit_loss != null ? formatEuroNumber(node.extra.profit_loss) : "not available"}</p>
+            `;
+          }
       } else {
         panel.innerHTML = `
           <h5 class="network-detail-title">Selected ${escapeHtml(prettyType)}</h5>
@@ -320,6 +341,7 @@
 
         neighbours.forEach(n => {
           const parsed = parseNeighbour(n);
+
           if (!parsed || !parsed.key) return;
 
           const targetNodeId = makeNodeId(parsed.type, parsed.key);
@@ -356,7 +378,8 @@
                   : "unknown",
               title: title,           // <-- now correct per type
               rawKey: parsed.key,     // <-- ID for detail panel only
-              name: parsed.label
+              name: parsed.label,
+              extra: parsed.extra || {}
             });
 
             seenNodes.add(targetNodeId);
