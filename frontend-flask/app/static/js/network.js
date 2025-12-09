@@ -267,7 +267,7 @@
       const nodeId = params.nodes[0];
       const [type, key] = nodeId.split(":");
       // expandNode will show the loader when fetching connections
-      expandNode(type, key, false);
+      expandNode(type, key, true);
     });
 
     // Detail panel on select
