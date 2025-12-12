@@ -32,13 +32,22 @@ def fetch_companies(term: str, page: int):
 def get_company_data(fnr):
     res = requests.get(f"http://127.0.0.1:8000/view/{fnr}")
     if res.status_code != 200:
-        return []
+        return {}
     res.raise_for_status()
     return response_to_data(res)
 
-def get_risk_indicators(fnr):
-    res = requests.get(f"http://127.0.0.1:8000/risk_indicators/{fnr}")
-    if res.status_code != 200:
-        return []
-    res.raise_for_status()
-    return response_to_data(res)
+def get_node_neighbours(key: str, label: str = "Company"):
+    """
+    Call the FastAPI /node endpoint and return its raw JSON.
+    This endpoint returns {"neighbours": [...]} – no 'result' wrapper.
+    """
+    url = f"http://127.0.0.1:8000/node/{key}"
+    params = {"label": label}
+    try:
+        res = requests.get(url, params=params, timeout=15)
+        res.raise_for_status()
+        return res.json()
+    except Exception as e:
+        print(f"API error (get_node_neighbours): {e}")
+        # Frontend expects at least this shape
+        return {"neighbours": []}
