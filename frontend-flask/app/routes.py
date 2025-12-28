@@ -1,7 +1,11 @@
 from .utils import fetch_companies, get_company_data, get_node_neighbours
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort, make_response
+from playwright.sync_api import sync_playwright
+import re
+from io import BytesIO
 from .models import db, User, bcrypt, SearchHistory
 from datetime import datetime
+
 
 main = Blueprint("main", __name__)
 
@@ -153,6 +157,49 @@ def view_company(fnr):
         show_back_button=True,
         fnr=fnr
     )
+
+def _safe_filename(name: str, max_len: int = 60) -> str:
+    name = (name or "Company").strip()
+    name = re.sub(r"[\\/:*?\"<>|]+", "", name)   # remove illegal filename chars
+    name = re.sub(r"\s+", "_", name)             # spaces -> underscores
+    return name[:max_len] if len(name) > max_len else name
+
+@main.route("/view/<fnr>/export.pdf")
+def export_company_pdf(fnr):
+    # Enforce same access rule as view_company (locked users should not export)
+    if not session.get("logged_in"):
+        abort(403)
+
+    company = get_company_data(fnr)  # same source as the UI :contentReference[oaicite:1]{index=1}
+    basic = (company or {}).get("basic_info", {}) or {}
+
+    company_name = basic.get("company_name", "Company")
+    today = datetime.now().strftime("%Y-%m-%d")
+    filename = f"{today}_{_safe_filename(company_name)}_CompanyReport.pdf"
+
+    # Render HTML from a dedicated PDF template
+    html = render_template(
+        "company_report.html",
+        company=company,
+        exported_at=datetime.now()
+    )
+
+    # Convert HTML -> PDF with Playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.set_content(html, wait_until="load")
+        pdf_bytes = page.pdf(
+            format="A4",
+            print_background=True,
+            margin={"top": "18mm", "bottom": "18mm", "left": "14mm", "right": "14mm"},
+        )
+        browser.close()
+
+    resp = make_response(pdf_bytes)
+    resp.headers["Content-Type"] = "application/pdf"
+    resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
 
 @main.route("/api/network")
 def api_network():

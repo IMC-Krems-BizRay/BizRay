@@ -9,6 +9,7 @@ python -m pip install --upgrade pip
 
 Write-Host "Installing dependencies..."
 pip install -r requirements.txt
+playwright install chromium
 
 Write-Host "Running database migrations..."
 flask --app frontend-flask/app.py db upgrade

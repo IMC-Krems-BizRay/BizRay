@@ -17,6 +17,14 @@
             <div class="top-text header-text">
               <h6>Company details</h6>
               <h2>{{ company.basic_info.company_name }}</h2>
+              {% if not locked %}
+                <div style="margin-top: 10px;">
+                  <a class="btn btn-dark"
+                    href="{{ url_for('main.export_company_pdf', fnr=fnr) }}">
+                    Export as PDF
+                  </a>
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>

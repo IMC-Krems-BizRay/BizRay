@@ -1,0 +1,215 @@
+{% macro fmt(val) -%}
+  {% if val is number %}
+    {{ "{:,.2f}".format(val) }}
+  {% else %}
+    {{ val if val is not none else "Not available" }}
+  {% endif %}
+{%- endmacro %}
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Company Report</title>
+  <style>
+    @page { size: A4; margin: 18mm 14mm; }
+    body { font-family: Arial, sans-serif; font-size: 12.5px; color: #111; }
+    h1 { font-size: 20px; margin: 0 0 6px; }
+    .meta { color: #444; margin-bottom: 16px; }
+    .section { margin-top: 18px; page-break-inside: avoid; break-inside: avoid; }
+    .section h2 { font-size: 14px; margin: 0 0 8px; padding: 6px 10px; background: #e9edf3; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+    .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #eee; padding: 6px 0; }
+    .k { font-weight: 700; color: #222; }
+    .v { color: #111; }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+    th { background: #f3f5f8; }
+    .pill { display: inline-block; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 11px; }
+    .risk-low { background: #e7f7ee; color: #0f5132; }
+    .risk-medium { background: #fff3cd; color: #664d03; }
+    .risk-high { background: #f8d7da; color: #842029; }
+    .muted { color: #666; }
+  </style>
+</head>
+<body>
+
+{% set basic = company.get('basic_info', {}) %}
+{% set financial_list = company.get('financial') or [] %}
+{% set compliance = company.get('compliance_indicators') %}
+
+<h1>{{ basic.get('company_name', 'Unknown') }}</h1>
+<div class="meta">
+  Exported: {{ exported_at.strftime("%Y-%m-%d %H:%M") }}<br>
+  Company Number: {{ basic.get('company_number', 'Unknown') }}
+</div>
+
+<div class="section">
+  <h2>Basic company details</h2>
+  <div class="grid">
+    <div class="row"><span class="k">Legal form</span><span class="v">{{ basic.get('legal_form', 'Unknown') }}</span></div>
+    <div class="row"><span class="k">European ID</span><span class="v">{{ basic.get('european_id', 'Unknown') }}</span></div>
+  </div>
+</div>
+
+{% set managers = company.get('management') or [] %}
+
+<div class="section">
+  <h2>Management</h2>
+  {% if managers %}
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Appointed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in managers %}
+          <tr>
+            <td>{{ m.get('name', 'Unknown') }}</td>
+            <td>{{ m.get('role', 'Unknown') }}</td>
+            <td>{{ m.get('appointed_on', 'Unknown') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">No management data available.</div>
+  {% endif %}
+</div>
+
+{% set loc = company.get('location') or {} %}
+
+<div class="section">
+  <h2>Location</h2>
+
+  {% if loc %}
+    <div class="row">
+      <span class="k">Address</span>
+      <span class="v">
+        {{ loc.get('street','') }}
+        {{ loc.get('house_number','') }},
+        {{ loc.get('postal_code','') }}
+        {{ loc.get('city','') }},
+        {{ loc.get('country','Not available') }}
+      </span>
+    </div>
+  {% else %}
+    <div class="muted">No location data available.</div>
+  {% endif %}
+</div>
+
+
+{% set financial_list = company.get('financial') or [] %}
+
+<div class="section">
+  <h2>Key financial data (all years)</h2>
+
+  {% if financial_list|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Fiscal year</th>
+          <th>Total assets</th>
+          <th>Equity</th>
+          <th>Working capital</th>
+          <th>Debt-to-equity</th>
+          <th>Equity ratio (%)</th>
+          <th>Current ratio</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for y in financial_list %}
+          <tr>
+            <td>
+              {{ y.get('fiscal_year', {}).get('start', 'Unknown') }}
+              -
+              {{ y.get('fiscal_year', {}).get('end', 'Unknown') }}
+            </td>
+            <td>{{ fmt(y.get('total_assets')) }}</td>
+            <td>{{ fmt(y.get('equity')) }}</td>
+            <td>{{ fmt(y.get('working_capital')) }}</td>
+            <td>{{ fmt(y.get('debt_to_equity_ratio')) }}</td>
+            <td>{{ fmt(y.get('equity_ratio')) }}</td>
+            <td>{{ fmt(y.get('current_ratio')) }}</td>
+
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">No financial data available.</div>
+  {% endif %}
+</div>
+
+
+<div class="section">
+  <h2>Risk indicators (where available)</h2>
+
+  {% if financial_list|length > 0 %}
+    {% set latest = financial_list[-1] %}
+
+    {# simple classification matching your UI intent #}
+    {% set dte = latest.get('debt_to_equity_ratio') %}
+    {% if dte is not none %}
+      {% if dte < 1 %}{% set dte_cls = "risk-low" %}
+      {% elif dte <= 2 %}{% set dte_cls = "risk-medium" %}
+      {% else %}{% set dte_cls = "risk-high" %}{% endif %}
+    {% else %}
+      {% set dte_cls = "" %}
+    {% endif %}
+
+    <div class="row">
+      <span class="k">Debt-to-equity</span>
+      <span class="v">
+        {% if dte is none %}<span class="muted">Not available</span>
+        {% else %}<span class="pill {{ dte_cls }}">{{ dte }}</span>{% endif %}
+      </span>
+    </div>
+
+    {% set er = latest.get('equity_ratio') %}
+    {% if er is not none %}
+      {% if er < 25 %}{% set er_cls = "risk-high" %}
+      {% elif er <= 50 %}{% set er_cls = "risk-medium" %}
+      {% else %}{% set er_cls = "risk-low" %}{% endif %}
+    {% else %}
+      {% set er_cls = "" %}
+    {% endif %}
+
+    <div class="row">
+      <span class="k">Equity ratio (%)</span>
+      <span class="v">
+        {% if er is none %}<span class="muted">Not available</span>
+        {% else %}<span class="pill {{ er_cls }}">{{ er }}</span>{% endif %}
+      </span>
+    </div>
+  {% endif %}
+
+  {% if compliance %}
+    {% set avg = compliance.get("avg_filing_delay") %}
+    {% if avg is not none %}
+      {% if avg <= 90 %}{% set avg_cls = "risk-low" %}
+      {% elif avg <= 273 %}{% set avg_cls = "risk-medium" %}
+      {% else %}{% set avg_cls = "risk-high" %}{% endif %}
+    {% else %}
+      {% set avg_cls = "" %}
+    {% endif %}
+
+    <div class="row">
+      <span class="k">Avg filing delay (days)</span>
+      <span class="v">
+        {% if avg is none %}<span class="muted">Not available</span>
+        {% else %}<span class="pill {{ avg_cls }}">{{ avg }}</span>{% endif %}
+      </span>
+    </div>
+  {% else %}
+    <div class="muted">No compliance data available.</div>
+  {% endif %}
+</div>
+
+</body>
+</html>
