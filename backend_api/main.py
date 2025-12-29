@@ -1,3 +1,4 @@
+import base64
 from fastapi import FastAPI, HTTPException
 from zeep.exceptions import Fault
 from fastapi.encoders import jsonable_encoder
@@ -11,11 +12,21 @@ from .NETWORK import CREATE_COMPANY, SEARCH_COMPANY, GET_NEIGHBOURS
 
 # Boot: uvicorn backend_api.main:app --reload
 app = FastAPI()
-@app.get('/')
-def confirm_connection():
-    return {"Status": "Active", "Available endpoints": ['/search/{term}', '/view/{company_fnr}', '/node/{node_id}?label=Label']}
 
-@app.get('/search/{term}')
+
+@app.get("/")
+def confirm_connection():
+    return {
+        "Status": "Active",
+        "Available endpoints": [
+            "/search/{term}",
+            "/view/{company_fnr}",
+            "/node/{node_id}?label=Label",
+        ],
+    }
+
+
+@app.get("/search/{term}")
 def search_companies(term: str, page: int):
     try:
         result = search(term, page)
@@ -23,35 +34,40 @@ def search_companies(term: str, page: int):
     except Fault as e:
         raise HTTPException(status_code=400, detail=e.message)
 
-@app.get('/view/{company_fnr}')
+
+@app.get("/view/{company_fnr}")
 def view_company(company_fnr: str):
     fromdb = SEARCH_COMPANY(company_fnr)
     if fromdb:
-        #print("got result from db")
+        # print("got result from db")
         return {"result": fromdb}
     else:
         data = company_info(company_fnr)
-        CREATE_COMPANY(jsonable_encoder(data))
-        #print('got result from api')
+        # CREATE_COMPANY(jsonable_encoder(data))
+        # print('got result from api')
         return {"result": data}
 
 
-@app.get('/node/{node_id}')
+@app.get("/node/{node_id}")
 def get_node_neighbours(node_id: str, label: str):
     neighbours = GET_NEIGHBOURS(node_id, label)
     return {"neighbours": neighbours}
 
 
-@app.get('/docs/{fnr}') #for testing, don't use on frontend
-def docs(fnr):
-    return {"res": get_document_data(fnr)}
+@app.get("/document/{document_id}")
+def get_document(document_id: str):
+    pdf_bytes = get_document_data(document_id)
+    encoded = base64.b64encode(pdf_bytes).decode("utf-8")
+    return {"result": encoded}
 
 
-@app.get('/repopulate')
+@app.get("/repopulate")
 def repop():
     for i in company_ids:
         view_company(i)
-#to repopulate
+
+
+# to repopulate
 company_ids = [
     "435836 k",
     "570748 k",
@@ -119,5 +135,5 @@ company_ids = [
     "414769 f",
     "647957 d",
     "434465 w",
-    "449074 d"
+    "449074 d",
 ]
