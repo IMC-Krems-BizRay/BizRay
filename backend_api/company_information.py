@@ -88,26 +88,58 @@ def extract_company_data(info):
                 deferred_tax_liabilities: float,
                 total_liabilities: float
 
-                // Indicators:
-                working_capital: float,
-                debt_to_equity_ratio: null | float,
-                equity_ratio: null | float,
+                // Calculated for risks
                 quick_assets: float,
-                current_ratio: null | float,
-                cash_ratio: null | float,
-                quick_ratio: float,
-                fixed_asset_coverage: null | float,
-                profit_loss: float,
+
+                // 'level' is risk level of the company
+                // H stands for High, M stands for Medium, L stands for Low
+                // Indicators:
+                indicators: {
+                    working_capital: {
+                        value: float,
+                        level: "H" | "L"
+                    }
+                    debt_to_equity_ratio: null | {
+                        value: float,
+                        level: "H" | "M" | "L"
+                    }
+                    equity_ratio: null | {
+                        value: float,
+                        level: "H" | "M" | "L"
+                    },
+                    current_ratio: null | {
+                        value: float,
+                        level: "H" | "M" | "L"
+                    },
+                    cash_ratio: null | {
+                        value: float,
+                        level: "H" | "M" | "L"
+                    },
+                    quick_ratio: {
+                        value: float,
+                        level: "H" | "M" | "L"
+                    },
+                    fixed_asset_coverage: null | {
+                        value: float,
+                        level: "H" | "M" | "L"
+                    },
+                    profit_loss: {
+                        value: float,
+                        level: "H" | "L"
+                    },
+                },
 
                 // Trends: can be absent for the first year
-                asset_growth_rate?: float,
-                equity_growth_rate?: float,
-                profit_loss_development?: float,
-                equity_ratio_trend?: float,
-                total_assets_trend?: float,
-                working_capital_trend?: float,
-                current_ratio_development?: float,
-                debt_to_equity_trend?: float
+                trends: null | {
+                    asset_growth_rate: float,
+                    equity_growth_rate: float,
+                    profit_loss_development: float,
+                    equity_ratio_trend: float,
+                    total_assets_trend: float,
+                    working_capital_trend: float,
+                    current_ratio_development: float,
+                    debt_to_equity_trend: float
+                }
             },
             ...
         ],
@@ -136,10 +168,15 @@ def extract_company_data(info):
             max_filing_delay: null | int,
             late_filing_frequency: null | float,
             missing_reporting_years: int
+        },
+        risk_indicators: {
+            has_masseverwalter: bool,
+            risk_level: null | "H" | "M" | "L"
         }
     }
     """
 
+    management = extract_management_info(info)
     history = extract_company_history(info)
 
     doc_ids, total_reports = get_doc_ids(info.FNR)
@@ -147,6 +184,7 @@ def extract_company_data(info):
     calculate_financial_indicators(financial)
 
     compliance_indicators, is_deleted = extract_compliance_indicators(financial, history, total_reports)
+    risk_indicators = extract_risk_indicators(management, financial[-1]["indicators"] if financial else None)
 
     data = {
         'basic_info': {
@@ -157,10 +195,11 @@ def extract_company_data(info):
             'is_deleted': is_deleted
         },
         'location': extract_location_info(info),
-        'management': extract_management_info(info),
+        'management': management,
         'financial': financial,
         'history': history,
-        'compliance_indicators': compliance_indicators
+        'compliance_indicators': compliance_indicators,
+        'risk_indicators': risk_indicators,
     }
 
     return data
@@ -169,41 +208,104 @@ def calculate_financial_indicators(financial_years):
     """
     Mutates the passed in list by appending additional data to it
     """
+    if financial_years:
+        financial_years[0]["trends"] = None
+    else:
+        return
+
     for year in financial_years:
         divide_or_none = lambda numerator, denominator: year[numerator] / year[denominator] if year[denominator] else None
-        year["working_capital"] = year["current_assets"] - year["deferred_income"]
-        year["debt_to_equity_ratio"] = divide_or_none("liabilities", "equity")
-        year["equity_ratio"] = divide_or_none("equity", "total_liabilities") # wrong
 
+        # This one is used for calculation of others
         year["quick_assets"] = year["cash_and_bank_balances"] + year["securities"] + year["receivables"]
-        year["current_ratio"] = divide_or_none("current_assets", "deferred_income")
-        year["cash_ratio"] = divide_or_none("cash_and_bank_balances", "deferred_income")
-        year["quick_ratio"] = divide_or_none("quick_assets", "deferred_income")
 
-        year["fixed_asset_coverage"] = divide_or_none("equity", "fixed_assets")
+        indicators = year["indicators"] = {}
 
-        year["profit_loss"] = year["retained_earnings"] - year["retained_earnings_subitem"]
+        value = year["current_assets"] - year["deferred_income"]
+        indicators["working_capital"] = {
+            "value": value,
+            "level": "L" if value > 0 else "H"
+        }
+
+        value = divide_or_none("liabilities", "equity")
+        indicators["debt_to_equity_ratio"] = None if not value else {
+            "value": value,
+            "level": "L" if value < 1 else "M" if value <= 2 else "H"
+        }
+
+        value = divide_or_none("equity", "total_liabilities") # wrong
+        indicators["equity_ratio"] = None if not value else {
+            "value": value,
+            "level": "L" if value > 50 else "M" if value >= 25 else "H"
+        }
+
+        value = divide_or_none("current_assets", "deferred_income")
+        indicators["current_ratio"] = None if not value else {
+            "value": value,
+            "level": "L" if value > 2 else "M" if value >= 1 else "H"
+        }
+
+        value = divide_or_none("cash_and_bank_balances", "deferred_income")
+        indicators["cash_ratio"] = None if not value else {
+            "value": value,
+            "level": "L" if value > 1 else "M" if value >= 0.2 else "H"
+        }
+
+        value = divide_or_none("quick_assets", "deferred_income")
+        indicators["quick_ratio"] = None if not value else {
+            "value": value,
+            "level": "L" if value > 1 else "M" if value >= 0.5 else "H"
+        }
+
+        value = divide_or_none("equity", "fixed_assets")
+        indicators["fixed_asset_coverage"] = None if not value else {
+            "value": value,
+            "level": "L" if value > 100 else "M" if value >= 50 else "H"
+        }
+
+        value = year["retained_earnings"] - year["retained_earnings_subitem"]
+        indicators["profit_loss"] = {
+            "value": value,
+            "level": "L" if value >= 0 else "H"
+        }
 
     for prev, curr in zip(financial_years, financial_years[1:]):
-        def growth_rate_or_none(metric):
-            if not prev[metric] or curr[metric] is None:
+        def growth_rate_or_none(metric, is_indicator):
+            # Get this man a True...
+            if is_indicator:
+                if prev["indicators"][metric] is None or curr["indicators"][metric] is None:
+                    return None
+                prev_value = prev["indicators"][metric]["value"]
+                if prev_value == 0:
+                    return None
+
+                return (curr["indicators"][metric]["value"] - prev_value) / prev_value
+
+            if not prev[metric] or not curr[metric]:
                 return None
             return (curr[metric] - prev[metric]) / prev[metric]
 
-        curr["asset_growth_rate"] = growth_rate_or_none("total_assets")
-        curr["equity_growth_rate"] = growth_rate_or_none("equity")
-        curr["profit_loss_development"] = growth_rate_or_none("profit_loss")
+        trends = curr["trends"] = {}
 
-        def trend_or_none(metric):
-            if prev[metric] is None or curr[metric] is None:
+        trends["asset_growth_rate"] = growth_rate_or_none("total_assets", False)
+        trends["equity_growth_rate"] = growth_rate_or_none("equity", False)
+        trends["profit_loss_development"] = growth_rate_or_none("profit_loss", True)
+
+        def trend_or_none(metric, is_indicator):
+            if is_indicator:
+                if prev["indicators"][metric] is None or curr["indicators"][metric] is None:
+                    return None
+
+                return prev["indicators"][metric]["value"] - curr["indicators"][metric]["value"]
+            if not prev[metric] or not curr[metric]:
                 return None
             return prev[metric] - curr[metric]
 
-        curr["equity_ratio_trend"] = trend_or_none("equity_ratio")
-        curr["total_assets_trend"] = trend_or_none("total_assets")
-        curr["working_capital_trend"] = trend_or_none("working_capital")
-        curr["current_ratio_development"] = trend_or_none("current_ratio")
-        curr["debt_to_equity_trend"] = trend_or_none("debt_to_equity_ratio")
+        trends["equity_ratio_trend"] = trend_or_none("equity_ratio", True)
+        trends["total_assets_trend"] = trend_or_none("total_assets", False)
+        trends["working_capital_trend"] = trend_or_none("working_capital", True)
+        trends["current_ratio_development"] = trend_or_none("current_ratio", True)
+        trends["debt_to_equity_trend"] = trend_or_none("debt_to_equity_ratio", True)
 
 def extract_compliance_indicators(financial, history, total_reports):
     filing_delays = []
@@ -450,9 +552,27 @@ def filing_delay(sheet) -> int:
 
     return (submission - year_end).days
 
+def extract_risk_indicators(management, indicators):
+    for manager in management:
+        if manager["role"] == "Masserverwalter":
+            return {
+                "has_masserverwalter": True,
+                "risk_level": "H"
+            }
 
-######################LEVEL 3##########################################################
 
+    if not indicators:
+        return {
+            "has_masserverwalter": False,
+            "risk_level": None
+        }
 
-def network_metrics(info):
-    pass
+    high_risk_metrics = 0
+    for metric in indicators.values():
+        if metric and metric["level"] == "H":
+            high_risk_metrics += 1
+
+    return {
+        "has_masserverwalter": False,
+        "risk_level": "L" if high_risk_metrics <= 2 else "M" if high_risk_metrics <= 4 else "H"
+    }
