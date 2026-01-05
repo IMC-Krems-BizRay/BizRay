@@ -266,7 +266,7 @@ def calculate_financial_indicators(financial_years):
             if not value
             else {
                 "value": value,
-                "level": "L" if value > 50 else "M" if value >= 25 else "H",
+                "level": "L" if value > 0.50 else "M" if value >= 0.25 else "H",
             }
         )
 
@@ -306,7 +306,7 @@ def calculate_financial_indicators(financial_years):
             if not value
             else {
                 "value": value,
-                "level": "L" if value > 100 else "M" if value >= 50 else "H",
+                "level": "L" if value > 1.00 else "M" if value >= 0.50 else "H",
             }
         )
 
