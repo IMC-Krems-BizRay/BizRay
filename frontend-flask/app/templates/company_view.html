@@ -17,6 +17,14 @@
             <div class="top-text header-text">
               <h6>Company details</h6>
               <h2>{{ company.basic_info.company_name }}</h2>
+              {% if not locked %}
+                <div style="margin-top: 10px;">
+                  <a class="btn btn-dark"
+                    href="{{ url_for('main.export_company_pdf', fnr=fnr) }}">
+                    Export as PDF
+                  </a>
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -279,7 +287,7 @@
                                         {% if financial_list|length > 1 %}
                                           <div id="financial-trend-section" style="margin-top: 30px;">
                                             <h2 class="section-header">Financial Trends (Line Graphs)</h2>
-                                      
+
                                             <div class="row" style="min-height: 260px;">
                                               <div class="col-md-6 mb-4">
                                                 <h5>Total Assets</h5>
@@ -541,29 +549,36 @@
 
                                             <!-- Legend -->
                                             <div style="margin-top: 8px; padding-left: 20px; font-size: 0.9rem;">
-                                              <span style="display:inline-flex; align-items:center; margin-right:16px;">
-                                                <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#1f77b4; margin-right:6px;"></span>
-                                                Company
-                                              </span>
-                                              <span style="display:inline-flex; align-items:center; margin-right:16px;">
-                                                <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#ff7f0e; margin-right:6px;"></span>
-                                                Manager
-                                              </span>
-                                              <span style="display:inline-flex; align-items:center; margin-right:16px;">
-                                                <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#2ca02c; margin-right:6px;"></span>
-                                                Address
-                                              </span>
-                                              <span style="display:inline-flex; align-items:center;">
-                                                <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#7f7f7f; margin-right:6px;"></span>
-                                                Other
-                                              </span>
+                                              <div style="margin-bottom:6px;">
+                                                <span style="display:inline-flex; align-items:center; margin-right:16px;">
+                                                  <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#1f77b4; margin-right:6px;"></span>
+                                                  Company
+                                                </span>
+                                                <span style="display:inline-flex; align-items:center; margin-right:16px;">
+                                                  <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#ff7f0e; margin-right:6px;"></span>
+                                                  Manager
+                                                </span>
+                                                <span style="display:inline-flex; align-items:center; margin-right:16px;">
+                                                  <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#2ca02c; margin-right:6px;"></span>
+                                                  Address
+                                                </span>
+                                                <span style="display:inline-flex; align-items:center;">
+                                                  <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#7f7f7f; margin-right:6px;"></span>
+                                                  Other
+                                                </span>
+                                              </div>
+
+                                              <div style="margin-bottom:6px;">
+                                                <strong>Risk inside company nodes:</strong>
+                                                <span style="margin-left:8px; margin-right:10px;"><strong>H</strong> = High</span>
+                                                <span style="margin-right:10px;"><strong>M</strong> = Medium</span>
+                                                <span><strong>L</strong> = Low</span>
+                                              </div>
+
+                                              <div>
+                                                <strong>Expandable nodes:</strong> thick black border (click to expand, click again to collapse)
+                                              </div>
                                             </div>
-
-
-                                          <!-- Message area for "No connections available" etc. -->
-                                          <div id="graph-message"
-                                               style="margin-top: 8px; font-size: 0.9rem; color: #666; padding-left: 20px;">
-                                          </div>
 
                                           <!-- Optional detail panel -->
                                           <div id="node-detail"
@@ -577,6 +592,8 @@
                                             // Data for the JS file
                                             const COMPANY_ID = "{{ company.basic_info.company_number }}";  // ID used in /node/{id}?label=Company
                                             const COMPANY_NAME = "{{ company.basic_info.company_name }}";
+                                             // Use tojson so JS gets a proper null or string value (null | "H"|"M"|"L")
+                                             const COMPANY_RISK = {{ (company.get('risk_indicators') or {}).get('risk_level') | tojson }};
                                             const NETWORK_API_URL = "{{ url_for('main.api_network') }}";
                                           </script>
 
@@ -822,6 +839,7 @@
         });
     </script>
 {% endblock %}
+
 
 
 

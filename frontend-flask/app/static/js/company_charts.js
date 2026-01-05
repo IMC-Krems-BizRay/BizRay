@@ -98,7 +98,7 @@ window.renderCompanyCharts = function (rawData) {
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { ticks: { autoSkip: false } },
-                    y: { 
+                    y: {
                         beginAtZero: false,
                         ticks: {
                             callback: function(value) {
