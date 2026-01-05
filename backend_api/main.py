@@ -2,7 +2,7 @@ import base64
 from fastapi import FastAPI, HTTPException
 from zeep.exceptions import Fault
 from fastapi.encoders import jsonable_encoder
-
+import datetime
 import json
 
 from .search import search
@@ -39,13 +39,14 @@ def search_companies(term: str, page: int):
 def view_company(company_fnr: str):
     fromdb = SEARCH_COMPANY(company_fnr)
     if fromdb:
-        # print("got result from db")
-        return {"result": fromdb}
-    else:
-        data = company_info(company_fnr)
-        # CREATE_COMPANY(jsonable_encoder(data))
-        # print('got result from api')
-        return {"result": data}
+        if fromdb['updated_at'] > datetime.datetime.now().timestamp() - 30 * 24 * 60 * 60: #data must be newer than one month
+            #print("got result from db")
+            return {"result": fromdb}
+
+    data = company_info(company_fnr)
+    CREATE_COMPANY(jsonable_encoder(data))
+    #print('got result from api')
+    return {"result": data}
 
 
 @app.get("/node/{node_id}")

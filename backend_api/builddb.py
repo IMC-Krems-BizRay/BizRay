@@ -4,7 +4,7 @@ import json
 import os
 from neo4j import GraphDatabase
 import xml.etree.ElementTree as ET
-
+import datetime
 from types import SimpleNamespace
 
 
@@ -27,7 +27,8 @@ UNWIND $rows AS row
 
 MERGE (c:Company {company_id: row.company_id})
 SET c.data   = row.information,
-    c.glance = row.glance
+    c.glance = row.glance,
+    c.updated_at = $datetime
 
 MERGE (a:Address {address_key: row.addr_key})
 MERGE (c)-[:LOCATED_AT]->(a)
@@ -41,7 +42,7 @@ UNWIND row.mgr_keys AS mk
 
 def write_batch(batch):
     with driver.session() as session:
-        session.run(CYPHER, rows=batch)
+        session.run(CYPHER, rows=batch, datetime = datetime.datetime(2000, 1, 1).timestamp()) #if it breaks we can blame y2k
 
 
 

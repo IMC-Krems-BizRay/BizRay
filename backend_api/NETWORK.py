@@ -1,6 +1,7 @@
 from neo4j import GraphDatabase
 import json
 from backend_api.config import DB_USER, DB_PASS, URI, DB
+import datetime
  
 driver = GraphDatabase.driver(URI, auth=(DB_USER, DB_PASS))
 
@@ -114,6 +115,7 @@ def CREATE_COMPANY(data):
     MERGE (c:Company {company_id: $company_id})
       SET c.data = $information
       SET c.glance = $glance
+      SET c.updated_at = $datetime
 
     MERGE (a:Address {address_key: $addr_key})
     MERGE (c)-[:LOCATED_AT]->(a)
@@ -133,17 +135,17 @@ def CREATE_COMPANY(data):
             information = information,
             addr_key=addr_key,
             mgr_keys=mgr_keys,
-            glance = glance
+            glance = glance,
+            datetime = datetime.datetime.today().timestamp()
         )
         #print('created company!')
 
 
 def SEARCH_COMPANY(company_id):
 
-    #print(company_id)
-    #TODO: this doesn't seem like the best way of doing this
-    company_id = company_id[:-1] + " " + company_id[-1]
-    #print(company_id)
+   #print(company_id)
+    company_id = str(company_id)
+
 
     #Debugging
     #with driver.session(database=DB) as session:
@@ -154,7 +156,7 @@ def SEARCH_COMPANY(company_id):
 
     cypher = """
     MATCH (c:Company {company_id: $company_id})
-    RETURN c.data AS data
+    RETURN c AS data
     """
 
     with driver.session(database=DB) as session:
@@ -163,8 +165,12 @@ def SEARCH_COMPANY(company_id):
         #print(result)
 
         if result:
-            data_str = result["data"]
-            return json.loads(data_str) if data_str else None
+            node = result["data"]
+            data_dict = dict(node)
+
+            data_dict["data"] = json.loads(data_dict["data"]) if "data" in data_dict else None
+            data_dict["updated_at"] = data_dict.get("updated_at")
+            return data_dict
         return None
 
 
