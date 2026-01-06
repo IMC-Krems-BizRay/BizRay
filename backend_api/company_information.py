@@ -632,7 +632,7 @@ def get_doc_ids(fnr) -> tuple[list[dict], list[str], int]:
         if AZ not in keys:
             keys.add(AZ)
             total_years += 1
-    pdf_ids.sort(key=lambda x: x["date"])
+    pdf_ids.sort(key=lambda x: x["date"] or date(2000, 1, 1))
 
     return pdf_ids, xml_report_ids, total_years
 
