@@ -83,7 +83,7 @@ def get_risk_indicators(data):
    
     last_filed_doc = data["financial"][-1]["submission_date"] #most recent year
     missing_years = data["compliance_indicators"]["missing_reporting_years"]
-    profit_loss = data["financial"][-1]["profit_loss"] 
+    profit_loss = data["financial"][-1].get("profit_loss")
 
     return {
         "company_id": company_id,
@@ -144,7 +144,7 @@ def CREATE_COMPANY(data):
 def SEARCH_COMPANY(company_id):
 
    #print(company_id)
-    company_id = str(company_id)
+    company_id = company_id[:-1] + " " + company_id[-1]
 
 
     #Debugging
