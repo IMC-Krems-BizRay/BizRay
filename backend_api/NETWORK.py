@@ -2,8 +2,9 @@ from neo4j import GraphDatabase
 import json
 from backend_api.config import DB_USER, DB_PASS, URI, DB
 import datetime
- 
+
 driver = GraphDatabase.driver(URI, auth=(DB_USER, DB_PASS))
+
 
 def make_manager_key(m):
     date_of_birth = m["date_of_birth"]
@@ -11,10 +12,10 @@ def make_manager_key(m):
         return "Date of birth is unavailable"
 
     name = m["name"]
-    return f'{date_of_birth}|{name}'.strip()
+    return f"{date_of_birth}|{name}".strip()
 
 
-#TODO: This doesn't always work properly
+# TODO: This doesn't always work properly
 def make_address_key(loc):
     if not loc:
         return "Unknown Address"
@@ -40,13 +41,12 @@ def make_address_key(loc):
     return ", ".join(parts)
 
 
-
-#THIS SHOULD ONLY BE RUN AT THE START!
+# THIS SHOULD ONLY BE RUN AT THE START!
 def create_indexes():
     cypher_list = [
         "CREATE CONSTRAINT company_id_unique IF NOT EXISTS FOR (c:Company) REQUIRE c.company_id IS UNIQUE",
         "CREATE CONSTRAINT manager_key_unique IF NOT EXISTS FOR (m:Manager) REQUIRE m.manager_key IS UNIQUE",
-        "CREATE CONSTRAINT address_key_unique IF NOT EXISTS FOR (a:Address) REQUIRE a.address_key IS UNIQUE"
+        "CREATE CONSTRAINT address_key_unique IF NOT EXISTS FOR (a:Address) REQUIRE a.address_key IS UNIQUE",
     ]
 
     with driver.session(database=DB) as session:
@@ -54,9 +54,9 @@ def create_indexes():
             session.run(c)
 
 
-#todo: this is just to confirm functionality, must correct it later
+# todo: this is just to confirm functionality, must correct it later
 def get_risk_indicators(data):
-    '''
+    """
     company_id
 
     company_name
@@ -67,7 +67,7 @@ def get_risk_indicators(data):
      financial indicators classified red: x/8
      #missing reporting years: x/8
     # profit/loss 20xx: xx
-    '''
+    """
 
     company_id = data["basic_info"]["company_number"]
     company_name = data["basic_info"]["company_name"]
@@ -78,11 +78,13 @@ def get_risk_indicators(data):
             "company_id": company_id,
             "company_name": company_name,
             "deleted": is_deleted,
-            "error": "Financial data is unavailable"
+            "error": "Financial data is unavailable",
         }
-   
-    last_filed_doc = data["financial"][-1]["submission_date"] #most recent year
-    missing_years = data["compliance_indicators"]["missing_reporting_years"]
+
+    last_filed_doc = data["financial"][-1]["submission_date"]  # most recent year
+    missing_years = data["compliance_indicators"]["calculations"][
+        "missing_reporting_years"
+    ]
     profit_loss = data["financial"][-1].get("profit_loss")
 
     return {
@@ -91,24 +93,22 @@ def get_risk_indicators(data):
         "deleted": is_deleted,
         "last_file": last_filed_doc,
         "missing_years": missing_years,
-        "profit_loss": profit_loss
+        "profit_loss": profit_loss,
     }
 
 
 def CREATE_COMPANY(data):
 
-
-    #data = company_json["result"]
-    #print(data)
+    # data = company_json["result"]
+    # print(data)
     company_id = data["basic_info"]["company_number"]
-
 
     mgr_keys = [make_manager_key(m) for m in data["management"]]
 
     addr_key = make_address_key(data.get("location"))
 
     glance = json.dumps(get_risk_indicators(data))
-    #print(glance)
+    # print(glance)
 
     information = json.dumps(data)
     cypher = """
@@ -132,27 +132,24 @@ def CREATE_COMPANY(data):
         session.run(
             cypher,
             company_id=company_id,
-            information = information,
+            information=information,
             addr_key=addr_key,
             mgr_keys=mgr_keys,
-            glance = glance,
-            datetime = datetime.datetime.today().timestamp()
+            glance=glance,
+            datetime=datetime.datetime.today().timestamp(),
         )
-        #print('created company!')
+        # print('created company!')
 
 
 def SEARCH_COMPANY(company_id):
 
-   #print(company_id)
+    # print(company_id)
     company_id = company_id[:-1] + " " + company_id[-1]
 
-
-    #Debugging
-    #with driver.session(database=DB) as session:
-     #   all_companies = session.run("MATCH (c:Company) RETURN c.company_id AS id").values()
-      #  print(f"All company IDs in DB: {all_companies}")
-
-
+    # Debugging
+    # with driver.session(database=DB) as session:
+    #   all_companies = session.run("MATCH (c:Company) RETURN c.company_id AS id").values()
+    #  print(f"All company IDs in DB: {all_companies}")
 
     cypher = """
     MATCH (c:Company {company_id: $company_id})
@@ -160,38 +157,37 @@ def SEARCH_COMPANY(company_id):
     """
 
     with driver.session(database=DB) as session:
-        result = session.run(
-            cypher, company_id=company_id).single()
-        #print(result)
+        result = session.run(cypher, company_id=company_id).single()
+        # print(result)
 
         if result:
             node = result["data"]
             data_dict = dict(node)
 
-            data_dict["data"] = json.loads(data_dict["data"]) if "data" in data_dict else None
+            data_dict["data"] = (
+                json.loads(data_dict["data"]) if "data" in data_dict else None
+            )
             data_dict["updated_at"] = data_dict.get("updated_at")
             return data_dict
         return None
 
 
 def GET_NEIGHBOURS(node_id, label):
-    '''
+    """
     label: Company
     node_id: FNR
-    '''
-    #print(label, node_id)
-    #todo
+    """
+    # print(label, node_id)
+    # todo
     node_type = {
         "Company": "company_id",
         "Address": "address_key",
-        "Manager": "manager_key"
+        "Manager": "manager_key",
     }
-
-
 
     cypher = f"""
         MATCH (n:{label} {{{node_type[label]}: $node_id}})--(connected)
-        
+
         RETURN
         CASE
              WHEN 'Company' IN labels(connected) THEN connected.glance
@@ -219,22 +215,14 @@ def GET_ADJ(node_id):
         return result
 
 
-
-
-
 if __name__ == "__main__":
     driver.verify_connectivity()
-    #create_indexes()
+    # create_indexes()
 
-    #SEARCH_COMPANY("583360h")
+    # SEARCH_COMPANY("583360h")
 
     print(GET_NEIGHBOURS("1963-05-06|Gerardus van Loon", "Manager"))
-
-
 
     with driver.session(database=DB) as s:
         res = s.run("MATCH (c:Company) RETURN count(c) AS cnt").single()
         print("company count (read check):", res["cnt"])
-
-
-

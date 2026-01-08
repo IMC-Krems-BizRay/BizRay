@@ -163,10 +163,21 @@ def extract_company_data(info):
                     is_late: bool
                 }
             ],
-            avg_filing_delay: null | float,
-            max_filing_delay: null | int,
-            late_filing_frequency: null | float,
-            missing_reporting_years: int
+            calculations: {
+                avg_filing_delay: null | {
+                    value: float,
+                    level: "H" | "M" | "L"
+                },
+                max_filing_delay: null | {
+                    value: int,
+                    level: "H" | "M" | "L"
+                },
+                late_filing_frequency: null | {
+                    value: float,
+                    level: "H" | "M" | "L"
+                },
+                missing_reporting_years: int
+            }
         },
         documents: [
             {
@@ -380,11 +391,24 @@ def extract_compliance_indicators(financial, history, total_reports):
 
     if filing_delays:
         days = [year["days"] for year in filing_delays]
-        avg_filing_delay = sum(days) / len(days)
-        max_filing_delay = max(days)
-        late_filing_frequency = sum(fd["is_late"] for fd in filing_delays) / len(
-            filing_delays
-        )
+
+        value = sum(days) / len(days)
+        avg_filing_delay = {
+            "value": value,
+            "level": "L" if value <= 90 else "M" if value <= 273 else "H",
+        }
+
+        value = max(days)
+        max_filing_delay = {
+            "value": value,
+            "level": "L" if value <= 180 else "M" if value <= 273 else "H",
+        }
+
+        value = sum(fd["is_late"] for fd in filing_delays) / len(filing_delays)
+        late_filing_frequency = {
+            "value": value,
+            "level": "L" if value < 0.2 else "M" if value <= 0.5 else "H",
+        }
     else:
         avg_filing_delay = None
         max_filing_delay = None
@@ -395,15 +419,22 @@ def extract_compliance_indicators(financial, history, total_reports):
     # the first history event is always a company creation
     first_year = history[0]["event_date"].year
     last_year = history[-1]["event_date"].year if is_deleted else date.today().year
+
     expected_reports = last_year - first_year
-    missing_reporting_years = expected_reports - total_reports
+    value = expected_reports - total_reports
+    missing_reporting_years = {
+        "value": value,
+        "level": "L" if value <= 0 else "M" if value <= 2 else "H",
+    }
 
     return {
         "filing_delays": filing_delays,
-        "avg_filing_delay": avg_filing_delay,
-        "max_filing_delay": max_filing_delay,
-        "late_filing_frequency": late_filing_frequency,
-        "missing_reporting_years": missing_reporting_years,
+        "calculations": {
+            "avg_filing_delay": avg_filing_delay,
+            "max_filing_delay": max_filing_delay,
+            "late_filing_frequency": late_filing_frequency,
+            "missing_reporting_years": missing_reporting_years,
+        },
     }, is_deleted
 
 

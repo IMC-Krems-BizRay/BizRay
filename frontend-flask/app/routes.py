@@ -1,5 +1,15 @@
 from .utils import fetch_companies, get_company_data, get_node_neighbours
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort, make_response
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    session,
+    abort,
+    make_response,
+)
 from playwright.sync_api import sync_playwright
 import re
 from io import BytesIO
@@ -10,7 +20,6 @@ from datetime import datetime
 main = Blueprint("main", __name__)
 
 
-
 @main.route("/")
 def index():
     user_id = session.get("user_id")
@@ -18,8 +27,7 @@ def index():
 
     if user_id:
         recent = (
-            SearchHistory.query
-            .filter_by(user_id=user_id)
+            SearchHistory.query.filter_by(user_id=user_id)
             .order_by(SearchHistory.created_at.desc())
             .limit(5)
             .all()
@@ -27,9 +35,9 @@ def index():
 
     return render_template(
         "index.html",
-        page='index',
+        page="index",
         logged_in=session.get("logged_in"),
-        recent_searches=recent
+        recent_searches=recent,
     )
 
 
@@ -54,7 +62,9 @@ def login():
         flash("Login failed. Check your email and password.", "danger")
         return redirect(url_for("main.login"))
 
-    return render_template("login.html", page="login", logged_in=session.get("logged_in"))
+    return render_template(
+        "login.html", page="login", logged_in=session.get("logged_in")
+    )
 
 
 @main.route("/logout")
@@ -63,6 +73,7 @@ def logout():
     session.pop("user_id", None)
     flash("Logout successful.", "info")
     return redirect(url_for("main.index"))
+
 
 @main.route("/register", methods=["GET", "POST"])
 def register():
@@ -77,7 +88,9 @@ def register():
             return redirect(url_for("main.register"))
 
         # Graceful duplicate handling: if user exists, tell them to log in
-        existing = User.query.filter((User.email == email) | (User.username == username)).first()
+        existing = User.query.filter(
+            (User.email == email) | (User.username == username)
+        ).first()
         if existing:
             flash("This user is already registered. Please log in.", "info")
             return redirect(url_for("main.login"))
@@ -104,7 +117,7 @@ def search_results():
     except Exception as e:
         print(f"Error while fetching or processing results: {e}")
         # fallback values if something goes wrong
-        result = {'total_pages': 1, 'companies': []}
+        result = {"total_pages": 1, "companies": []}
 
     # Store search for logged-in users (only once per query, when on page 1)
     if session.get("logged_in") and query and page == 1:
@@ -114,7 +127,6 @@ def search_results():
             db.session.add(entry)
             db.session.commit()
 
-
     return render_template(
         "search_results.html",
         companies=result["companies"],
@@ -122,10 +134,11 @@ def search_results():
         total_pages=result["total_pages"],
         title="Search Results",
         query=query,
-        show_back_button=True
+        show_back_button=True,
     )
 
-@main.route('/view/<fnr>')
+
+@main.route("/view/<fnr>")
 def view_company(fnr):
     # If NOT logged in: render locked view (no sensitive data)
     if not session.get("logged_in"):
@@ -134,7 +147,7 @@ def view_company(fnr):
             "location": None,
             "management": [],
             "financial": [],
-            "history": []
+            "history": [],
         }
         return render_template(
             "company_view.html",
@@ -143,11 +156,12 @@ def view_company(fnr):
             company=company_stub,
             title="Company view",
             show_back_button=True,
-            fnr=fnr
+            fnr=fnr,
         )
 
     # Logged in: fetch and normalize real data
     company = get_company_data(fnr)
+    print(company)
 
     return render_template(
         "company_view.html",
@@ -155,14 +169,16 @@ def view_company(fnr):
         company=company,
         title="Company view",
         show_back_button=True,
-        fnr=fnr
+        fnr=fnr,
     )
+
 
 def _safe_filename(name: str, max_len: int = 60) -> str:
     name = (name or "Company").strip()
-    name = re.sub(r"[\\/:*?\"<>|]+", "", name)   # remove illegal filename chars
-    name = re.sub(r"\s+", "_", name)             # spaces -> underscores
+    name = re.sub(r"[\\/:*?\"<>|]+", "", name)  # remove illegal filename chars
+    name = re.sub(r"\s+", "_", name)  # spaces -> underscores
     return name[:max_len] if len(name) > max_len else name
+
 
 @main.route("/view/<fnr>/export.pdf")
 def export_company_pdf(fnr):
@@ -170,7 +186,9 @@ def export_company_pdf(fnr):
     if not session.get("logged_in"):
         abort(403)
 
-    company = get_company_data(fnr)  # same source as the UI :contentReference[oaicite:1]{index=1}
+    company = get_company_data(
+        fnr
+    )  # same source as the UI :contentReference[oaicite:1]{index=1}
     basic = (company or {}).get("basic_info", {}) or {}
 
     company_name = basic.get("company_name", "Company")
@@ -179,9 +197,7 @@ def export_company_pdf(fnr):
 
     # Render HTML from a dedicated PDF template
     html = render_template(
-        "company_report.html",
-        company=company,
-        exported_at=datetime.now()
+        "company_report.html", company=company, exported_at=datetime.now()
     )
 
     # Convert HTML -> PDF with Playwright
@@ -200,6 +216,7 @@ def export_company_pdf(fnr):
     resp.headers["Content-Type"] = "application/pdf"
     resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     return resp
+
 
 @main.route("/api/network")
 def api_network():
@@ -220,7 +237,3 @@ def api_network():
     except Exception as e:
         print(f"/api/network error: {e}")
         return {"neighbours": []}, 500
-
-
-
-

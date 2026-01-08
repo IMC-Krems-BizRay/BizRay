@@ -109,7 +109,7 @@
     }
 } %}
 
-{% macro indicator_section(value, key, css="") %}
+{% macro financial_ratio_box(key, value, css = "") %}
   {% set meta = INDICATORS_MAP.get(key) %}
   {% if meta %}
     <div class="financial-ratio-box {{ css }}">
@@ -123,6 +123,20 @@
       </div>
     </div>
   {% endif %}
+{% endmacro %}
+
+{% macro indicator_section(key, indicator) %}
+  {% set css = "" %}
+  {% if indicator is not none %}
+    {% if indicator.level == "H" %}
+      {% set css = "risk-high" %}
+    {% elif indicator.level == "M" %}
+      {% set css = "risk-medium" %}
+    {% elif indicator.level == "L" %}
+      {% set css = "risk-low" %}
+    {% endif %}
+  {% endif %}
+  {{ financial_ratio_box(key, indicator.value if indicator else none, css) }}
 {% endmacro %}
 
 {% macro format_number(value) %}

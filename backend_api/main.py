@@ -39,13 +39,16 @@ def search_companies(term: str, page: int):
 def view_company(company_fnr: str):
     fromdb = SEARCH_COMPANY(company_fnr)
     if fromdb:
-        if fromdb['updated_at'] > datetime.datetime.now().timestamp() - 30 * 24 * 60 * 60: #data must be newer than one month
+        if (
+            fromdb["updated_at"]
+            > datetime.datetime.now().timestamp() - 30 * 24 * 60 * 60
+        ):  # data must be newer than one month
             print("got result from db")
-            return {"result": fromdb}
+            return {"result": fromdb["data"]}
 
     data = company_info(company_fnr)
     CREATE_COMPANY(jsonable_encoder(data))
-    print('got result from api')
+    print("got result from api")
     print(data)
     return {"result": data}
 
@@ -62,11 +65,13 @@ def get_document(document_id: str):
     encoded = base64.b64encode(pdf_bytes).decode("utf-8")
     return {"result": encoded}
 
+
 @app.get("/get_adj/{fnr}")
 def adjcom(fnr: str):
     a = GET_ADJ(fnr)
-   # print(a)
+    # print(a)
     return {"companies": a}
+
 
 @app.get("/repopulate")
 def repop():
