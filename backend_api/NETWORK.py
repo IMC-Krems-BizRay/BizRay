@@ -199,14 +199,27 @@ def GET_NEIGHBOURS(node_id, label):
              END AS result
         """
 
-
-
-
-
     with driver.session(database=DB) as session:
         result = session.run(cypher, node_id=node_id).data()
         print(result)
         return result
+
+
+def GET_ADJ(node_id):
+    cypher = """
+    MATCH (c:Company {company_id: $node_id})
+          -[:LOCATED_AT|HAS_MANAGER]->()
+          <-[:LOCATED_AT|HAS_MANAGER]-(other:Company)
+    WHERE c <> other
+    RETURN DISTINCT other
+    """
+
+    with driver.session(database=DB) as session:
+        result = session.run(cypher, node_id=node_id).data()
+        return result
+
+
+
 
 
 if __name__ == "__main__":

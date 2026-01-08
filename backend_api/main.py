@@ -7,7 +7,7 @@ import json
 
 from .search import search
 from .company_information import company_info, get_document_data
-from .NETWORK import CREATE_COMPANY, SEARCH_COMPANY, GET_NEIGHBOURS
+from .NETWORK import CREATE_COMPANY, SEARCH_COMPANY, GET_NEIGHBOURS, GET_ADJ
 
 
 # Boot: uvicorn backend_api.main:app --reload
@@ -62,6 +62,11 @@ def get_document(document_id: str):
     encoded = base64.b64encode(pdf_bytes).decode("utf-8")
     return {"result": encoded}
 
+@app.get("/get_adj/{fnr}")
+def adjcom(fnr: str):
+    a = GET_ADJ(fnr)
+   # print(a)
+    return {"companies": a}
 
 @app.get("/repopulate")
 def repop():
