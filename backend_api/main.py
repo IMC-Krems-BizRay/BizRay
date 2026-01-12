@@ -73,6 +73,26 @@ def repop():
     for i in company_ids:
         view_company(i)
 
+@app.post("/enrich/neighbours/{company_id}")
+def enrich_neighbours(company_id: str):
+    neighbours = GET_ADJ(company_id)
+
+    enriched = 0
+    failed = 0
+
+    # include center + neighbours
+    targets = [company_id] + neighbours
+
+    for cid in targets:
+        try:
+            view_company(cid)
+            enriched += 1
+        except Exception as e:
+            failed += 1
+
+    return {"center": company_id, "enriched": enriched, "failed": failed}
+
+
 
 # to repopulate
 company_ids = [

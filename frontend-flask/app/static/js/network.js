@@ -327,7 +327,12 @@
         group: "company",
         title: title,
         rawKey: COMPANY_ID,
-        name: COMPANY_NAME,
+        name: COMPANY_NAME || name,
+        extra: {
+          companyId: COMPANY_ID,
+          companyName: name,
+          risk_level: (typeof COMPANY_RISK_LEVEL !== "undefined" ? COMPANY_RISK_LEVEL : null)
+        },
         isExpandable: false
       });
 
@@ -393,6 +398,17 @@
       const node = nodes.get(nodeId);
       if (!node) return;
 
+      // AUTO-ENRICH when clicking a company
+      if (type === "Company") {
+        fetch(`http://127.0.0.1:8000/enrich/neighbours/${encodeURIComponent(key)}`, {
+          method: "POST",
+        })
+        .then(() => {
+          expandNode(type, key, true);
+        })
+        .catch(() => {});
+      }
+
       if (expandedNodes.has(nodeId)) {
         collapseNode(nodeId);
         return;
@@ -402,6 +418,7 @@
         expandNode(type, key, true);
       }
     });
+
 
     // Detail panel on select (OG)
     network.on("selectNode", function (params) {
@@ -423,7 +440,7 @@
 
         panel.innerHTML = `
           <h5 class="network-detail-title">Selected Company</h5>
-          <p><strong>Name:</strong> ${escapeHtml(node.name || node.extra?.companyName || "")}</p>
+          <p><strong>Name:</strong> ${escapeHtml(node.extra?.companyName || node.name || "")}</p>
           <p><strong>Risk:</strong> ${escapeHtml(riskVal)}</p>
           <p><strong>FNR:</strong> ${escapeHtml(node.rawKey)}</p>
         `;
@@ -485,6 +502,16 @@
           if (!parsed || !parsed.key) return;
 
           const targetNodeId = makeNodeId(parsed.type, parsed.key);
+
+          // refresh existing company nodes after enrichment (risk/label changes)
+          if (seenNodes.has(targetNodeId) && parsed.type === "Company") {
+            nodes.update({
+              id: targetNodeId,
+              label: parsed.label,
+              extra: parsed.extra || {},
+              name: parsed.label
+            });
+          }
 
           if (!seenNodes.has(targetNodeId)) {
             const groupName = parsed.type.toLowerCase();
@@ -607,7 +634,14 @@
       addCentralCompanyNode();
       initNetwork();
 
-      // Initial expand, and borders for the first layer appear automatically
+      // 🔹 AUTO-ENRICH CENTRAL COMPANY ON LOAD
+      fetch(`http://127.0.0.1:8000/enrich/neighbours/${encodeURIComponent(COMPANY_ID)}`, {
+        method: "POST",
+      })
+      .then(() => refreshCompanyNode(COMPANY_ID))
+      .catch(() => {});
+
+      // Initial expand
       expandNode("Company", COMPANY_ID, true);
     }, 50);
   }
