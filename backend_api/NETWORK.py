@@ -57,43 +57,48 @@ def create_indexes():
 # todo: this is just to confirm functionality, must correct it later
 def get_risk_indicators(data):
     """
-    company_id
+        company_id
 
-    company_name
+        company_name
 
 
-     #Status: active / not active
-     #last submitted XML report: 20XX
-     financial indicators classified red: x/8
-     #missing reporting years: x/8
-    # profit/loss 20xx: xx
-    """
-
+         #Status: active / not active
+         #last submitted XML report: 20XX
+         financial indicators classified red: x/8
+         #missing reporting years: x/8
+        # profit/loss 20xx: xx
+        """
     company_id = data["basic_info"]["company_number"]
     company_name = data["basic_info"]["company_name"]
     is_deleted = data["basic_info"]["is_deleted"]
 
-    if not data["financial"]:
+    risk_level = (data.get("risk_indicators") or {}).get("risk_level")
+
+    if not data.get("financial"):
         return {
             "company_id": company_id,
             "company_name": company_name,
             "deleted": is_deleted,
+            "risk_level": risk_level,   # keep it even if None
             "error": "Financial data is unavailable",
         }
 
-    last_filed_doc = data["financial"][-1]["submission_date"]  # most recent year
-    missing_years = data["compliance_indicators"]["calculations"][
-        "missing_reporting_years"
-    ]
-    profit_loss = data["financial"][-1].get("profit_loss")
+    last_filed_doc = data["financial"][-1]["submission_date"]
+
+    missing_years_value = (
+        data["compliance_indicators"]["calculations"]["missing_reporting_years"]["value"]
+    )
+
+    profit_loss_value = data["financial"][-1]["indicators"]["profit_loss"]["value"]
 
     return {
         "company_id": company_id,
         "company_name": company_name,
         "deleted": is_deleted,
+        "risk_level": risk_level,
         "last_file": last_filed_doc,
-        "missing_years": missing_years,
-        "profit_loss": profit_loss,
+        "missing_years": missing_years_value,
+        "profit_loss": profit_loss_value,
     }
 
 

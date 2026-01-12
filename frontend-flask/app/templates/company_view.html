@@ -427,7 +427,7 @@
                                             const COMPANY_ID = "{{ company.basic_info.company_number }}";  // ID used in /node/{id}?label=Company
                                             const COMPANY_NAME = "{{ company.basic_info.company_name }}";
                                              // Use tojson so JS gets a proper null or string value (null | "H"|"M"|"L")
-                                             const COMPANY_RISK = {{ (company.get('risk_indicators') or {}).get('risk_level') | tojson }};
+                                              const COMPANY_RISK_LEVEL = {{ (company.get('risk_indicators', {}).get('risk_level')) | tojson }};
                                             const NETWORK_API_URL = "{{ url_for('main.api_network') }}";
                                           </script>
 

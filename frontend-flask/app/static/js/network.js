@@ -79,6 +79,14 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
+
+  function companyLabel(name, risk) {
+    const r = (risk === "H" || risk === "M" || risk === "L") ? risk : "";
+    if (!r) return escapeHtml(name);
+    return `${escapeHtml(name)}\n<b>${r}</b>`;
+  }
+
+
   // function for formating numbers in the detail panel
   function formatEuroNumber(value) {
     if (value == null || isNaN(value)) return "not available";
@@ -164,12 +172,12 @@
         if (g && g.company_id) {
           const id = g.company_id;
           const name = g.company_name || id;
-          const label = `${name}`; // keep OG: name only
+          const risk = g.risk_level || null;
 
           return {
             type: "Company",
             key: id,
-            label: label,
+            label: companyLabel(name, risk),
             extra: {
               companyId: id,
               companyName: name,
@@ -177,6 +185,7 @@
               last_file: g.last_file,
               missing_years: g.missing_years,
               profit_loss: g.profit_loss,
+              risk_level: risk
             },
           };
         }
@@ -221,10 +230,18 @@
 
     // --- COMPANY NODE AS FULL OBJECT (if backend ever returns it) ---
     if (payload.company_id) {
+      const id = payload.company_id;
+      const name = payload.company_name || id;
+      const risk = payload.risk_level || null;
       return {
         type: "Company",
-        key: payload.company_id,
-        label: payload.company_id,
+        key: id,
+        label: companyLabel(name, risk),
+        extra: {
+          companyId: id,
+          companyName: name,
+          risk_level: risk
+        }
       };
     }
 
@@ -306,7 +323,7 @@
 
       nodes.add({
         id: nodeId,
-        label: name,
+        label: companyLabel(name, (typeof COMPANY_RISK_LEVEL !== "undefined" ? COMPANY_RISK_LEVEL : null)),
         group: "company",
         title: title,
         rawKey: COMPANY_ID,
@@ -334,7 +351,7 @@
         stabilization: {iterations: 150}
       },
       nodes: {
-        font: {size: 14}
+        font: {size: 14, multi: "html"}
       },
       edges: {
         smooth: true
@@ -398,9 +415,16 @@
         rawType.charAt(0).toUpperCase() + rawType.slice(1); // company -> Company
 
       if (rawType === "company") {
+        const rawRisk = node.extra?.risk_level;
+        const riskVal =
+          rawRisk && String(rawRisk).trim() && String(rawRisk).trim().toUpperCase() !== "NONE"
+            ? String(rawRisk).trim().toUpperCase()
+            : "No risk data available";
+
         panel.innerHTML = `
           <h5 class="network-detail-title">Selected Company</h5>
-          <p><strong>Name:</strong> ${escapeHtml(node.label)}</p>
+          <p><strong>Name:</strong> ${escapeHtml(node.name || node.extra?.companyName || "")}</p>
+          <p><strong>Risk:</strong> ${escapeHtml(riskVal)}</p>
           <p><strong>FNR:</strong> ${escapeHtml(node.rawKey)}</p>
         `;
         if (node.extra) {

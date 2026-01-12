@@ -77,14 +77,17 @@ def extract_glance(root):
     legal_form_elem = firma.find("ns1:FI_DKZ07/ns1:RECHTSFORM/ns1:TEXT", NS)
     euid_elem = root.find("ns1:EUID/ns1:EUID", NS)
 
+    company_number = root.attrib.get(
+        "{ns://firmenbuch.justiz.gv.at/Abfrage/v2/AuszugResponse}FNR"
+    )
+
     return {
+        "company_id": company_number,
         "company_name": (
             company_name_elem.text if company_name_elem is not None else None
         ),
         "legal_form": legal_form_elem.text if legal_form_elem is not None else None,
-        "company_number": root.attrib.get(
-            "{ns://firmenbuch.justiz.gv.at/Abfrage/v2/AuszugResponse}FNR"
-        ),
+        "company_number": company_number,
         "european_id": euid_elem.text if euid_elem is not None else None,
     }
 
