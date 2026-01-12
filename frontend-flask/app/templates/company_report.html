@@ -1,12 +1,36 @@
-{% macro fmt(val) -%}
+<!-- language: html
+File: frontend-flask/app/templates/company_report.html -->
+{% import "macros/company_view.html" as m %}
+
+{# macro to format numbers or show fallback #}
+{% macro fmt(val, decimals=2) -%}
   {% if val is number %}
-    {{ "{:,.2f}".format(val) }}
+    {{ ("{:,.%df}" % decimals).format(val).replace(",", " ").replace(".", ",") }}
   {% else %}
     {{ val if val is not none else "Not available" }}
   {% endif %}
 {%- endmacro %}
 
+{# macro to render a financial indicator value, using safe lookups #}
+{% macro fin_ind_value(year, key) -%}
+  {% set ind = year.get('indicators', {}).get(key) %}
+  {% set meta = m.INDICATORS_MAP.get(key) if m is defined else None %}
+  {% if ind %}
+    {{ m.put_value(ind.get('value') if ind is mapping else ind, meta.is_percent if meta else False) }}
+  {% else %}
+    <span class="muted">Not available</span>
+  {% endif %}
+{%- endmacro %}
 
+{% macro format_number(value, decimals=2) %}
+  {% if value is number %}
+    {{ ("{:,.%df}" % decimals).format(value)
+       .replace(",", " ")
+       .replace(".", ",") }}
+  {% else %}
+    Not available
+  {% endif %}
+{%- endmacro %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -32,6 +56,25 @@
     .risk-medium { background: #fff3cd; color: #664d03; }
     .risk-high { background: #f8d7da; color: #842029; }
     .muted { color: #666; }
+    /* keep numbers on one line */
+    table td {
+      white-space: nowrap;
+    }
+
+    /* right-align numeric columns */
+    table td:nth-child(2),
+    table td:nth-child(3),
+    table td:nth-child(4),
+    table td:nth-child(5),
+    table td:nth-child(6),
+    table td:nth-child(7) {
+      text-align: right;
+    }
+
+    /* center fiscal year */
+    table td:first-child {
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -68,11 +111,11 @@
         </tr>
       </thead>
       <tbody>
-        {% for m in managers %}
+        {% for mm in managers %}
           <tr>
-            <td>{{ m.get('name', 'Unknown') }}</td>
-            <td>{{ m.get('role', 'Unknown') }}</td>
-            <td>{{ m.get('appointed_on', 'Unknown') }}</td>
+            <td>{{ mm.get('name', 'Unknown') }}</td>
+            <td>{{ mm.get('role', 'Unknown') }}</td>
+            <td>{{ mm.get('appointed_on', 'Unknown') }}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -103,9 +146,6 @@
   {% endif %}
 </div>
 
-
-{% set financial_list = company.get('financial') or [] %}
-
 <div class="section">
   <h2>Key financial data (all years)</h2>
 
@@ -132,11 +172,10 @@
             </td>
             <td>{{ fmt(y.get('total_assets')) }}</td>
             <td>{{ fmt(y.get('equity')) }}</td>
-            <td>{{ fmt(y.get('working_capital')) }}</td>
-            <td>{{ fmt(y.get('debt_to_equity_ratio')) }}</td>
-            <td>{{ fmt(y.get('equity_ratio')) }}</td>
-            <td>{{ fmt(y.get('current_ratio')) }}</td>
-
+            <td>{{ fin_ind_value(y, 'working_capital') }}</td>
+            <td>{{ fin_ind_value(y, 'debt_to_equity_ratio') }}</td>
+            <td>{{ fin_ind_value(y, 'equity_ratio') }}</td>
+            <td>{{ fin_ind_value(y, 'current_ratio') }}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -146,15 +185,14 @@
   {% endif %}
 </div>
 
-
 <div class="section">
   <h2>Risk indicators (where available)</h2>
 
   {% if financial_list|length > 0 %}
     {% set latest = financial_list[-1] %}
 
-    {# simple classification matching your UI intent #}
-    {% set dte = latest.get('debt_to_equity_ratio') %}
+    {% set dte_obj = latest.get('indicators', {}).get('debt_to_equity_ratio') %}
+    {% set dte = dte_obj.get('value') if dte_obj is mapping else (dte_obj.value if dte_obj else none) %}
     {% if dte is not none %}
       {% if dte < 1 %}{% set dte_cls = "risk-low" %}
       {% elif dte <= 2 %}{% set dte_cls = "risk-medium" %}
@@ -167,14 +205,22 @@
       <span class="k">Debt-to-equity</span>
       <span class="v">
         {% if dte is none %}<span class="muted">Not available</span>
-        {% else %}<span class="pill {{ dte_cls }}">{{ dte }}</span>{% endif %}
+        {% else %}<span class="pill {{ dte_cls }}">{{ format_number(dte) }}</span>{% endif %}
       </span>
     </div>
 
-    {% set er = latest.get('equity_ratio') %}
-    {% if er is not none %}
-      {% if er < 25 %}{% set er_cls = "risk-high" %}
-      {% elif er <= 50 %}{% set er_cls = "risk-medium" %}
+    {% set er_obj = latest.get('indicators', {}).get('equity_ratio') %}
+    {% set er  = er_obj.get('value')  if er_obj is mapping else (er_obj.value if er_obj else none) %}
+
+    {% if er is not none and er <= 1 %}
+      {% set er_pct = er * 100 %}
+    {% else %}
+      {% set er_pct = er %}
+    {% endif %}
+
+    {% if er_pct is not none %}
+      {% if er_pct < 25 %}{% set er_cls = "risk-high" %}
+      {% elif er_pct <= 50 %}{% set er_cls = "risk-medium" %}
       {% else %}{% set er_cls = "risk-low" %}{% endif %}
     {% else %}
       {% set er_cls = "" %}
@@ -183,14 +229,16 @@
     <div class="row">
       <span class="k">Equity ratio (%)</span>
       <span class="v">
-        {% if er is none %}<span class="muted">Not available</span>
-        {% else %}<span class="pill {{ er_cls }}">{{ er }}</span>{% endif %}
+        {% if er_pct is none %}<span class="muted">Not available</span>
+        {% else %}<span class="pill {{ er_cls }}">{{ format_number(er_pct) }}%</span>{% endif %}
       </span>
     </div>
   {% endif %}
 
   {% if compliance %}
-    {% set avg = compliance.get("avg_filing_delay") %}
+    {% set avg_obj = compliance.get('calculations', {}).get('avg_filing_delay') %}
+    {% set avg = avg_obj.value if avg_obj else none %}
+
     {% if avg is not none %}
       {% if avg <= 90 %}{% set avg_cls = "risk-low" %}
       {% elif avg <= 273 %}{% set avg_cls = "risk-medium" %}
@@ -203,7 +251,7 @@
       <span class="k">Avg filing delay (days)</span>
       <span class="v">
         {% if avg is none %}<span class="muted">Not available</span>
-        {% else %}<span class="pill {{ avg_cls }}">{{ avg }}</span>{% endif %}
+        {% else %}<span class="pill {{ avg_cls }}">{{ format_number(avg, 0) }}</span>{% endif %}
       </span>
     </div>
   {% else %}
