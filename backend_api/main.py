@@ -39,9 +39,11 @@ def search_companies(term: str, page: int):
 def view_company(company_fnr: str):
     fromdb = SEARCH_COMPANY(company_fnr)
     if fromdb:
+        timestamp = fromdb.get("updated_at")
         data = fromdb.get("data")
-        if isinstance(data, dict) and "basic_info" in data:
-            return {"result": data}
+        if timestamp > datetime.datetime.now().timestamp() - 30 * 24 * 60 * 60:
+            if isinstance(data, dict) and "basic_info" in data:
+                return {"result": data}
     # otherwise fetch real data
     data = company_info(company_fnr)
     CREATE_COMPANY(jsonable_encoder(data))
