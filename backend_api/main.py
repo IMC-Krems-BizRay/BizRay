@@ -1,4 +1,5 @@
 import base64
+import re
 from fastapi import FastAPI, HTTPException
 from zeep.exceptions import Fault
 
@@ -32,8 +33,20 @@ def search_companies(term: str, page: int):
         raise HTTPException(status_code=400, detail=e.message)
 
 
+def format_company_fnr(fnr):
+    fnr = fnr.strip()
+
+    match = re.fullmatch(r"(\d{1,6})(\w)", fnr)
+    if match:
+        return f"{match.group(1)} {match.group(2)}"
+
+    return fnr
+
+
 @app.get("/view/{company_fnr}")
 def view_company(company_fnr: str):
+    company_fnr = format_company_fnr(company_fnr)
+
     company = GET_COMPANY(company_fnr)
 
     companies = GET_ADJ(company_fnr)
@@ -76,13 +89,6 @@ def get_document(document_id: str):
     pdf_bytes = get_document_data(document_id)
     encoded = base64.b64encode(pdf_bytes).decode("utf-8")
     return {"result": encoded}
-
-
-@app.get("/get_adj/{fnr}")
-def adjcom(fnr: str):
-    a = GET_ADJ(fnr)
-    # print(a)
-    return {"companies": a}
 
 
 @app.get("/repopulate")
