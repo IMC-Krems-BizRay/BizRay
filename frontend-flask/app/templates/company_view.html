@@ -403,12 +403,38 @@
                                               </div>
 
                                               <div style="margin-bottom:6px;">
-                                                <strong>Risk below company nodes:</strong>
-                                                <span style="margin-left:8px; margin-right:10px;"><strong>H</strong> = High</span>
-                                                <span style="margin-right:10px;"><strong>M</strong> = Medium</span>
-                                                <span><strong>L</strong> = Low</span>
-                                                <span style="margin-left:10px;">(no letter = no data)</span>
-                                              </div>
+                                                  <strong>Risk below company nodes:</strong>
+
+                                                  <div style="
+                                                    display:flex;
+                                                    flex-wrap:wrap;
+                                                    gap:8px;
+                                                    margin-top:6px;
+                                                    padding:8px 10px;
+                                                    background:#f2f4f7;
+                                                    border:1px solid #e1e6ef;
+                                                    border-radius:12px;
+                                                    color:#333;
+                                                    align-items:center;
+                                                  ">
+                                                    <span><strong>H</strong> = High</span>
+                                                    <span style="color:#98a2b3;">|</span>
+                                                    <span><strong>M</strong> = Medium</span>
+                                                    <span style="color:#98a2b3;">|</span>
+                                                    <span><strong>L</strong> = Low</span>
+                                                    <span style="color:#98a2b3;">|</span>
+                                                    <span>(no letter = no data)</span>
+
+                                                    <div style="flex-basis:100%; height:0;"></div>
+
+                                                    <div style="display:flex; flex-direction:column; gap:4px; color:#475467; font-size:0.85rem;">
+                                                      <div><strong>High:</strong> 5 - 8 financial indicators in red, or “Masseverwalter” in management</div>
+                                                      <div><strong>Medium:</strong> 3 - 4 financial indicators in red</div>
+                                                      <div><strong>Low:</strong> 0 – 2 financial indicators in red</div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+
 
                                               <div>
                                                 <strong>Expandable nodes:</strong> thick black border (click to expand, click again to collapse)
