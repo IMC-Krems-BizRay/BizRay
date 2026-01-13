@@ -677,7 +677,7 @@ def filing_delay(sheet) -> int:
 
 def extract_risk_indicators(management, indicators):
     for manager in management:
-        if manager["role"] == "Masserverwalter":
+        if manager["role"] == "MASSEVERWALTER/IN":
             return {"has_masserverwalter": True, "risk_level": "H"}
 
     if not indicators:
