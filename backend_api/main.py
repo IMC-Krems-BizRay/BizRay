@@ -1,13 +1,10 @@
 import base64
 from fastapi import FastAPI, HTTPException
 from zeep.exceptions import Fault
-from fastapi.encoders import jsonable_encoder
-import datetime
-import json
 
 from .search import search
-from .company_information import company_info, get_document_data
-from .NETWORK import CREATE_COMPANY, SEARCH_COMPANY, GET_NEIGHBOURS, GET_ADJ
+from .company_information import get_document_data
+from .NETWORK import GET_COMPANY, GET_NEIGHBOURS, GET_ADJ
 
 
 # Boot: uvicorn backend_api.main:app --reload
@@ -37,17 +34,35 @@ def search_companies(term: str, page: int):
 
 @app.get("/view/{company_fnr}")
 def view_company(company_fnr: str):
-    fromdb = SEARCH_COMPANY(company_fnr)
-    if fromdb:
-        timestamp = fromdb.get("updated_at")
-        data = fromdb.get("data")
-        if timestamp > datetime.datetime.now().timestamp() - 30 * 24 * 60 * 60:
-            if isinstance(data, dict) and "basic_info" in data:
-                return {"result": data}
-    # otherwise fetch real data
-    data = company_info(company_fnr)
-    CREATE_COMPANY(jsonable_encoder(data))
-    return {"result": data}
+    company = GET_COMPANY(company_fnr)
+
+    companies = GET_ADJ(company_fnr)
+    companies_masseverwalter = 0
+    companies_high_risk = 0
+    companies_medium_risk = 0
+    companies_low_risk = 0
+    print(len(companies))
+    for info in (GET_COMPANY(company["other"]["company_id"]) for company in companies):
+        print(f"looking at company {info["basic_info"]["company_number"]}")
+        if info["risk_indicators"]["has_masseverwalter"]:
+            companies_masseverwalter += 1
+        match info["risk_indicators"]["risk_level"]:
+            case "H":
+                companies_high_risk += 1
+            case "M":
+                companies_medium_risk += 1
+            case "L":
+                companies_low_risk += 1
+
+    company["network"] = {
+        "connected": len(companies),
+        "masseverwalter": companies_masseverwalter,
+        "high_risk": companies_high_risk,
+        "medium_risk": companies_medium_risk,
+        "low_risk": companies_low_risk,
+    }
+
+    return {"result": company}
 
 
 @app.get("/node/{node_id}")
@@ -75,6 +90,7 @@ def repop():
     for i in company_ids:
         view_company(i)
 
+
 @app.post("/enrich/neighbours/{company_id}")
 def enrich_neighbours(company_id: str):
     neighbours = GET_ADJ(company_id)
@@ -93,7 +109,6 @@ def enrich_neighbours(company_id: str):
             failed += 1
 
     return {"center": company_id, "enriched": enriched, "failed": failed}
-
 
 
 # to repopulate
