@@ -603,26 +603,36 @@
       return;
     }
 
+    // 1) First collapse any expanded children that were added by this node
+    //    (so their edges get removed and they stop "floating")
+    for (const childId of rec.addedNodeIds) {
+      if (expandedNodes.has(childId)) {
+        collapseNode(childId);
+      }
+    }
+
+    // 2) Remove edges that this expansion added
     rec.addedEdgeIds.forEach(edgeId => {
       if (edges.get(edgeId)) edges.remove(edgeId);
     });
 
-    rec.addedNodeIds.forEach(nid => {
-      if (!nodes.get(nid)) return;
+    // 3) Remove nodes that this expansion added (only if they have no remaining edges)
+    rec.addedNodeIds.forEach(childId => {
+      if (!nodes.get(childId)) return;
 
-      if (!nodeHasAnyEdges(nid)) {
-        nodes.remove(nid);
-        seenNodes.delete(nid);
+      if (!nodeHasAnyEdges(childId)) {
+        nodes.remove(childId);
+        seenNodes.delete(childId);
 
-        expandedNodes.delete(nid);
-        expansionRecords.delete(nid);
+        expandedNodes.delete(childId);
+        expansionRecords.delete(childId);
 
-        // allow re-check if it reappears later
-        expandabilityChecked.delete(nid);
-        expandabilityPending.delete(nid);
+        expandabilityChecked.delete(childId);
+        expandabilityPending.delete(childId);
       }
     });
 
+    // 4) Finally, mark this node collapsed
     expandedNodes.delete(nodeId);
     expansionRecords.delete(nodeId);
   }
