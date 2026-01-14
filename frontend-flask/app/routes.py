@@ -237,3 +237,32 @@ def api_network():
     except Exception as e:
         print(f"/api/network error: {e}")
         return {"neighbours": []}, 500
+
+
+
+@main.route("/download/<doc_id>")
+def download_pdf(doc_id):
+   #file name 
+    doc_type = request.args.get("type", "Document")
+    doc_date = request.args.get("date", "UnknownDate")
+    
+    filename = f"{_safe_filename(doc_type)}_{doc_date}.pdf"
+  
+
+    try:
+        pdf_bytes = fetch_original_pdf(doc_id)
+        
+        if not pdf_bytes:
+            flash("Document content not found or empty.", "warning")
+            return redirect(request.referrer or url_for('main.index'))
+
+        response = make_response(pdf_bytes)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+    except Exception as e:
+        print(f"Download error: {e}")
+        flash("An error occurred while fetching the document.", "danger")
+        return redirect(request.referrer or url_for('main.index'))
+    
