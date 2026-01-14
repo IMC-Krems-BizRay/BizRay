@@ -1,4 +1,3 @@
-import base64
 from flask import Response
 import requests
 
@@ -55,36 +54,3 @@ def get_node_neighbours(key: str, label: str = "Company"):
         print(f"API error (get_node_neighbours): {e}")
         # Frontend expects at least this shape
         return {"neighbours": []}
-
-
-def fetch_original_pdf(doc_id: str):
-    """
-    Fetches the document from the backend.
-    Since the backend returns Base64 encoded JSON, we must decode it here.
-    """
-    url = f"http://127.0.0.1:8000/document/{doc_id}"
-    
-    try:
-        # Request the data
-        res = requests.get(url, timeout=45)
-        
-        if res.status_code != 200:
-            print(f"Backend error {res.status_code}")
-            return None
-        
-        # 1. Parse JSON response
-        data = res.json()
-        
-        # 2. Extract the Base64 string (Backend sends {"result": "..."})
-        if "result" not in data:
-            print("Payload missing 'result' key")
-            return None
-            
-        b64_string = data["result"]
-        
-        # 3. Decode back to raw bytes
-        return base64.b64decode(b64_string)
-
-    except Exception as e:
-        print(f"Error decoding PDF: {e}")
-        return None
