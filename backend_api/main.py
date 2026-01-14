@@ -48,7 +48,7 @@ def view_company(company_fnr: str):
     company_fnr = format_company_fnr(company_fnr)
 
     company = GET_COMPANY(company_fnr)
-
+    """
     companies = GET_ADJ(company_fnr)
     companies_masseverwalter = 0
     companies_high_risk = 0
@@ -74,6 +74,7 @@ def view_company(company_fnr: str):
         "medium_risk": companies_medium_risk,
         "low_risk": companies_low_risk,
     }
+    """
 
     return {"result": company}
 
