@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5
+    container_name: neo4j
+    ports:
+      - "7474:7474"  #browser
+      - "7687:7687"
+    volumes:
+      - ./data:/data        #storage
+      - ./import:/import    #if you want to export to csv
+    environment:
+      NEO4J_AUTH: neo4j/test1234567  # username/password

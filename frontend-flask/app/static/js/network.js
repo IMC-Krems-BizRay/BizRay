@@ -1,7 +1,3 @@
-// static/js/network.js
-// Graph for BizRay company network.
-// Requires COMPANY_ID, COMPANY_NAME, NETWORK_API_URL defined in the template.
-
 (function () {
   if (typeof COMPANY_ID === "undefined" || typeof NETWORK_API_URL === "undefined") {
     return; // not on company page
@@ -59,6 +55,14 @@
 
   let network = null;
 
+  // Expand / collapse state (frontend only)
+  const expandedNodes = new Set();        // nodeId
+  const expansionRecords = new Map();     // nodeId -> { addedNodeIds:Set, addedEdgeIds:Set }
+
+  // Expandability probing cache
+  const expandabilityChecked = new Set(); // nodeId
+  const expandabilityPending = new Set(); // nodeId
+
   function showMessage(text) {
     const msgEl = document.getElementById("graph-message");
     if (msgEl) msgEl.textContent = text || "";
@@ -75,6 +79,14 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   }
+
+  function companyLabel(name, risk) {
+    const r = (risk === "H" || risk === "M" || risk === "L") ? risk : "";
+    if (!r) return escapeHtml(name);
+    return `${escapeHtml(name)}\n<b>${r}</b>`;
+  }
+
+
   // function for formating numbers in the detail panel
   function formatEuroNumber(value) {
     if (value == null || isNaN(value)) return "not available";
@@ -90,6 +102,68 @@
     return `${type}:${key}`;
   }
 
+  function fetchNeighbours(key, label) {
+    const url = `${NETWORK_API_URL}?key=${encodeURIComponent(key)}&label=${encodeURIComponent(label)}`;
+    return fetch(url).then(resp => {
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      return resp.json();
+    });
+  }
+
+  // Apply border ONLY when node is expandable. Preserve group background color.
+  function applyExpandableBorder(nodeId) {
+    const node = nodes.get(nodeId);
+    if (!node) return;
+
+    const groupColors = {
+      company: "#1f77b4",
+      manager: "#ff7f0e",
+      address: "#2ca02c",
+      unknown: "#7f7f7f"
+    };
+
+    const g = (node.group || "unknown").toLowerCase();
+    const bg = groupColors[g] || groupColors.unknown;
+
+    nodes.update({
+      id: nodeId,
+      isExpandable: true,
+      borderWidth: 4,
+      borderWidthSelected: 4,
+      color: {
+        background: bg,
+        border: "#000000",
+        highlight: { background: bg, border: "#000000" }
+      }
+    });
+  }
+
+  function markNotExpandable(nodeId) {
+    const node = nodes.get(nodeId);
+    if (!node) return;
+    nodes.update({ id: nodeId, isExpandable: false });
+  }
+
+  function updateNodeKeepStyle(nodeId, patch) {
+    const cur = nodes.get(nodeId);
+    if (!cur) return;
+
+    nodes.update({
+      // keep current styling-related fields
+      id: nodeId,
+      group: cur.group,
+      color: cur.color,
+      borderWidth: cur.borderWidth,
+      borderWidthSelected: cur.borderWidthSelected,
+      isExpandable: cur.isExpandable,
+
+      // apply your new data
+      ...patch
+    });
+  }
+
   // Supports:
   // { "result": { "address_key": "..." } }
   // { "result": { "manager_key": "..." } }
@@ -98,16 +172,10 @@
   function parseNeighbour(neighbour) {
     if (!neighbour) return null;
 
-    // Backend can return:
-    // { result: { address_key: "..." } }
-    // { result: { manager_key: "..." } }
-    // { result: "{\"company_id\": \"154212h\", ...}" }  // glance JSON string
-    // or sometimes just the payload itself.
     let payload = neighbour.connected ?? neighbour.result ?? neighbour;
 
     // --- STRING CASE: glance JSON or error text ---
     if (typeof payload === "string") {
-      // Old backend error case, keep this just in case
       if (payload.includes("NoneType")) {
         return {
           type: "Address",
@@ -116,19 +184,18 @@
         };
       }
 
-      // Try to parse glance JSON: {"company_id": "...", ...}
       try {
         const g = JSON.parse(payload);
 
         if (g && g.company_id) {
           const id = g.company_id;
           const name = g.company_name || id;
-          const label = `${name}`; // show ONLY the name
+          const risk = g.risk_level || null;
 
           return {
             type: "Company",
             key: id,
-            label: label,
+            label: companyLabel(name, risk),
             extra: {
               companyId: id,
               companyName: name,
@@ -136,14 +203,13 @@
               last_file: g.last_file,
               missing_years: g.missing_years,
               profit_loss: g.profit_loss,
+              risk_level: risk
             },
           };
         }
 
-        // Unknown JSON shape – ignore
         return null;
       } catch (e) {
-        // Random string we don't know – ignore
         return null;
       }
     }
@@ -182,15 +248,112 @@
 
     // --- COMPANY NODE AS FULL OBJECT (if backend ever returns it) ---
     if (payload.company_id) {
+      const id = payload.company_id;
+      const name = payload.company_name || id;
+      const risk = payload.risk_level || null;
       return {
         type: "Company",
-        key: payload.company_id,
-        label: payload.company_id,
+        key: id,
+        label: companyLabel(name, risk),
+        extra: {
+          companyId: id,
+          companyName: name,
+          risk_level: risk
+        }
       };
     }
 
-    // Fallback – ignore unknown shapes
     return null;
+  }
+
+  async function refreshCompanyNode(companyId) {
+    const url = `http://127.0.0.1:8000/node/${encodeURIComponent(companyId)}?label=Company`;
+    const r = await fetch(url);
+    if (!r.ok) return;
+
+    const arr = await r.json();
+    if (!Array.isArray(arr) || !arr[0] || arr[0].result == null) return;
+
+    const parsed = parseNeighbour(arr[0]); // arr[0] has {result: "..."} shape
+    if (!parsed || !parsed.key) return;
+
+    const nodeId = makeNodeId(parsed.type, parsed.key);
+
+    // Only update if it already exists (avoid accidentally adding duplicates)
+    if (!nodes.get(nodeId)) return;
+
+    // IMPORTANT: keep border/color styles
+    updateNodeKeepStyle(nodeId, {
+      label: parsed.label,
+      extra: parsed.extra || {},
+      // keep clean name for detail panel (no risk letter)
+      name: parsed.extra?.companyName || nodes.get(nodeId)?.name || ""
+    });
+  }
+
+
+  // Probe backend once to decide if node is expandable.
+  // IMPORTANT: expandable means it would add at least one NEW node (not already in seenNodes).
+  // Returns Promise<boolean>.
+  function checkExpandable(type, key) {
+    const nodeId = makeNodeId(type, key);
+
+    if (expandabilityChecked.has(nodeId)) {
+      const node = nodes.get(nodeId);
+      return Promise.resolve(!!(node && node.isExpandable));
+    }
+
+    if (expandabilityPending.has(nodeId)) {
+      return new Promise(resolve => {
+        const t = setInterval(() => {
+          if (!expandabilityPending.has(nodeId)) {
+            clearInterval(t);
+            const node = nodes.get(nodeId);
+            resolve(!!(node && node.isExpandable));
+          }
+        }, 60);
+      });
+    }
+
+    expandabilityPending.add(nodeId);
+
+    return fetchNeighbours(key, type)
+      .then(data => {
+        const neighbours = (data && data.neighbours) ? data.neighbours : [];
+
+        // Decide if ANY neighbour would be a NEW node on the graph
+        let wouldAddNew = false;
+        if (Array.isArray(neighbours)) {
+          for (const n of neighbours) {
+            const parsed = parseNeighbour(n);
+            if (!parsed || !parsed.key) continue;
+
+            const targetNodeId = makeNodeId(parsed.type, parsed.key);
+            if (!seenNodes.has(targetNodeId)) {
+              wouldAddNew = true;
+              break;
+            }
+          }
+        }
+
+        expandabilityChecked.add(nodeId);
+
+        if (wouldAddNew) {
+          applyExpandableBorder(nodeId);
+          return true;
+        } else {
+          markNotExpandable(nodeId);
+          return false;
+        }
+      })
+      .catch(() => {
+        expandabilityChecked.add(nodeId);
+        markNotExpandable(nodeId);
+        return false;
+      })
+      .finally(() => {
+        expandabilityPending.delete(nodeId);
+      });
   }
 
   function addCentralCompanyNode() {
@@ -204,12 +367,19 @@
 
       nodes.add({
         id: nodeId,
-        label: name,
+        label: companyLabel(name, (typeof COMPANY_RISK_LEVEL !== "undefined" ? COMPANY_RISK_LEVEL : null)),
         group: "company",
         title: title,
         rawKey: COMPANY_ID,
-        name: COMPANY_NAME
+        name: COMPANY_NAME || name,
+        extra: {
+          companyId: COMPANY_ID,
+          companyName: name,
+          risk_level: (typeof COMPANY_RISK_LEVEL !== "undefined" ? COMPANY_RISK_LEVEL : null)
+        },
+        isExpandable: false
       });
+
       seenNodes.add(nodeId);
     }
     return nodeId;
@@ -230,7 +400,7 @@
         stabilization: {iterations: 150}
       },
       nodes: {
-        font: {size: 14}
+        font: {size: 14, multi: "html"}
       },
       edges: {
         smooth: true
@@ -261,16 +431,40 @@
 
     network = new vis.Network(graphContainer, data, options);
 
-    // Click to expand, but NEVER show "no connections" from clicks
+    // Click toggle:
+    // - if expanded -> collapse
+    // - if expandable -> expand
+    // - if not expandable -> do nothing (selection still works)
     network.on("click", function (params) {
       if (!params.nodes || params.nodes.length === 0) return;
       const nodeId = params.nodes[0];
       const [type, key] = nodeId.split(":");
-      // expandNode will show the loader when fetching connections
-      expandNode(type, key, true);
+      const node = nodes.get(nodeId);
+      if (!node) return;
+
+      // AUTO-ENRICH when clicking a company
+      if (type === "Company") {
+        fetch(`http://127.0.0.1:8000/enrich/neighbours/${encodeURIComponent(key)}`, {
+          method: "POST",
+        })
+        .then(() => {
+          expandNode(type, key, true);
+        })
+        .catch(() => {});
+      }
+
+      if (expandedNodes.has(nodeId)) {
+        collapseNode(nodeId);
+        return;
+      }
+
+      if (node.isExpandable) {
+        expandNode(type, key, true);
+      }
     });
 
-    // Detail panel on select
+
+    // Detail panel on select (OG)
     network.on("selectNode", function (params) {
       const nodeId = params.nodes[0];
       const node = nodes.get(nodeId);
@@ -282,9 +476,16 @@
         rawType.charAt(0).toUpperCase() + rawType.slice(1); // company -> Company
 
       if (rawType === "company") {
+        const rawRisk = node.extra?.risk_level;
+        const riskVal =
+          rawRisk && String(rawRisk).trim() && String(rawRisk).trim().toUpperCase() !== "NONE"
+            ? String(rawRisk).trim().toUpperCase()
+            : "No risk data available";
+
         panel.innerHTML = `
           <h5 class="network-detail-title">Selected Company</h5>
-          <p><strong>Name:</strong> ${escapeHtml(node.label)}</p>
+          <p><strong>Name:</strong> ${escapeHtml(node.extra?.companyName || node.name || "")}</p>
+          <p><strong>Risk:</strong> ${escapeHtml(riskVal)}</p>
           <p><strong>FNR:</strong> ${escapeHtml(node.rawKey)}</p>
         `;
         if (node.extra) {
@@ -307,44 +508,53 @@
     });
   }
 
-  function fetchNeighbours(key, label) {
-    const url = `${NETWORK_API_URL}?key=${encodeURIComponent(key)}&label=${encodeURIComponent(label)}`;
-    return fetch(url).then(resp => {
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-      return resp.json();
-    });
-  }
-
-  // showEmptyMessageForThisNode = true ONLY for the initial company load
+  // Expand node and also check expandability for newly shown nodes.
+  // Loader hides only after border checks finish.
   function expandNode(type, key, showEmptyMessageForThisNode) {
-     showGraphLoader();
+    showGraphLoader();
     clearMessage();
+
+    const sourceId = makeNodeId(type, key);
 
     return fetchNeighbours(key, type)
       .then(data => {
         const neighbours = data.neighbours || [];
 
-        // Only in ONE case do we show the message:
-        // - this node is allowed to show it (flag true)
-        // - backend returned no neighbours
         if (!neighbours.length) {
           if (showEmptyMessageForThisNode) {
             showMessage("No connections available for this company.");
           }
-          return;
+          // if no neighbours, cannot add new nodes
+          expandabilityChecked.add(sourceId);
+          markNotExpandable(sourceId);
+          return [];
         }
 
-        const sourceId = makeNodeId(type, key);
+        // Expanding succeeded; recompute expandability of source based on "adds new nodes"
+        // For the source itself, if this call returned neighbours, it is expandable by definition of user action.
+        // Still, we keep border consistent:
+        applyExpandableBorder(sourceId);
+        expandabilityChecked.add(sourceId);
+
         let anyNew = false;
+
+        const record = { addedNodeIds: new Set(), addedEdgeIds: new Set() };
+        const expandChecks = [];
 
         neighbours.forEach(n => {
           const parsed = parseNeighbour(n);
-
           if (!parsed || !parsed.key) return;
 
           const targetNodeId = makeNodeId(parsed.type, parsed.key);
+
+          // refresh existing company nodes after enrichment (risk/label changes)
+          if (seenNodes.has(targetNodeId) && parsed.type === "Company") {
+            updateNodeKeepStyle(targetNodeId, {
+              label: parsed.label,
+              extra: parsed.extra || {},
+              name: parsed.extra?.companyName || nodes.get(targetNodeId)?.name || parsed.label
+            });
+          }
 
           if (!seenNodes.has(targetNodeId)) {
             const groupName = parsed.type.toLowerCase();
@@ -363,7 +573,6 @@
               title = `Address\n${parsed.label}`;
             }
             else {
-              // Address or unknown
               title = `${parsed.type}\n${parsed.label}`;
             }
 
@@ -376,17 +585,21 @@
                 groupName === "address"
                   ? groupName
                   : "unknown",
-              title: title,           // <-- now correct per type
-              rawKey: parsed.key,     // <-- ID for detail panel only
+              title: title,
+              rawKey: parsed.key,
               name: parsed.label,
-              extra: parsed.extra || {}
+              extra: parsed.extra || {},
+              isExpandable: false
             });
 
             seenNodes.add(targetNodeId);
+            record.addedNodeIds.add(targetNodeId);
             anyNew = true;
+
+            // check whether this new node would add MORE nodes beyond what's already visible
+            expandChecks.push(checkExpandable(parsed.type, parsed.key));
           }
 
-          // undirected-looking edge, no arrows, avoid duplicate ID direction issues
           const edgeId = [sourceId, targetNodeId].sort().join("<->");
           if (!edges.get(edgeId)) {
             edges.add({
@@ -394,48 +607,101 @@
               from: sourceId,
               to: targetNodeId
             });
+            record.addedEdgeIds.add(edgeId);
           }
         });
 
-        // No message here even if nothing new was added.
-      // Backend had neighbours but nothing new got added => tell user
-      if (!anyNew && showEmptyMessageForThisNode) {
-        showMessage("No further connections for this node.");
+        expandedNodes.add(sourceId);
+        expansionRecords.set(sourceId, record);
+
+        if (!anyNew && showEmptyMessageForThisNode) {
+          showMessage("No further connections for this node.");
+        }
+
+        return Promise.all(expandChecks);
+      })
+      .catch(err => {
+        console.error("Error expanding node", err);
+        if (showEmptyMessageForThisNode) {
+          showMessage("No further connections for this node.");
+        }
+      })
+      .finally(() => {
+        hideGraphLoader();
+      });
+  }
+
+  function nodeHasAnyEdges(nodeId) {
+    const allEdges = edges.get();
+    for (const e of allEdges) {
+      if (e.from === nodeId || e.to === nodeId) return true;
+    }
+    return false;
+  }
+
+  function collapseNode(nodeId) {
+    const rec = expansionRecords.get(nodeId);
+    if (!rec) {
+      expandedNodes.delete(nodeId);
+      return;
+    }
+
+    // 1) First collapse any expanded children that were added by this node
+    //    (so their edges get removed and they stop "floating")
+    for (const childId of rec.addedNodeIds) {
+      if (expandedNodes.has(childId)) {
+        collapseNode(childId);
       }
-    })
-    .catch(err => {
-      console.error("Error expanding node", err);
-      if (showEmptyMessageForThisNode) {
-        showMessage("No further connections for this node.");
-      }
-    })
-    .finally(() => {
-      hideGraphLoader();  // ← HIDE SPINNER
+    }
+
+    // 2) Remove edges that this expansion added
+    rec.addedEdgeIds.forEach(edgeId => {
+      if (edges.get(edgeId)) edges.remove(edgeId);
     });
+
+    // 3) Remove nodes that this expansion added (only if they have no remaining edges)
+    rec.addedNodeIds.forEach(childId => {
+      if (!nodes.get(childId)) return;
+
+      if (!nodeHasAnyEdges(childId)) {
+        nodes.remove(childId);
+        seenNodes.delete(childId);
+
+        expandedNodes.delete(childId);
+        expansionRecords.delete(childId);
+
+        expandabilityChecked.delete(childId);
+        expandabilityPending.delete(childId);
+      }
+    });
+
+    // 4) Finally, mark this node collapsed
+    expandedNodes.delete(nodeId);
+    expansionRecords.delete(nodeId);
   }
 
   function initialLoad() {
-    // Show loader immediately when starting to load the graph
     showGraphLoader();
-    
-    // Use setTimeout to ensure loader is visible before network initialization
+
     setTimeout(() => {
       addCentralCompanyNode();
       initNetwork();
 
-      // First and ONLY time we allow the "no connections" message.
-      // expandNode will keep the loader visible while fetching
+      // 🔹 AUTO-ENRICH CENTRAL COMPANY ON LOAD
+      fetch(`http://127.0.0.1:8000/enrich/neighbours/${encodeURIComponent(COMPANY_ID)}`, {
+        method: "POST",
+      })
+      .then(() => refreshCompanyNode(COMPANY_ID))
+      .catch(() => {});
+
+      // Initial expand
       expandNode("Company", COMPANY_ID, true);
     }, 50);
   }
 
-  // Script is loaded after the DOM elements in the template.
-  // Wait for DOM to be fully ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialLoad);
   } else {
     initialLoad();
   }
 })();
-
-

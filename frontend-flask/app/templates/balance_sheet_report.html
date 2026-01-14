@@ -1,0 +1,113 @@
+{% import "macros/company_view.html" as macros %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Balance Sheet Report</title>
+  <style>
+    @page { size: A4; margin: 18mm 14mm; }
+    body { font-family: Arial, sans-serif; font-size: 12.5px; color: #111; }
+    h1 { font-size: 20px; margin: 0 0 6px; }
+    .meta { color: #444; margin-bottom: 16px; }
+    .section { margin-top: 18px; page-break-inside: avoid; break-inside: avoid; }
+    .k { font-weight: 700; color: #222; }
+    .v { color: #111; }
+
+    /* Balance sheet styling (matches your class names) */
+    .section-header { font-size: 14px; margin: 0 0 8px; padding: 6px 10px; background: #e9edf3; }
+
+    .asset-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      border-bottom: 1px solid #eee;
+      padding: 6px 0;
+    }
+
+    .asset-label-h4 {
+      font-size: 13px;
+      font-weight: 700;
+      margin: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* these come from your macro asset_row */
+    .asset-label-h5 { font-size: 12.5px; font-weight: 700; margin: 0; }
+    .asset-label-h6 { font-size: 11.5px; font-weight: 600; margin: 0; color: #444; }
+
+    .asset-value { font-weight: 700; }
+    .asset-value-2 { font-weight: 700; }
+  </style>
+</head>
+
+<body>
+  {% set basic = company.get('basic_info', {}) %}
+  {% set fy = year.get('fiscal_year', {}) %}
+
+  <h1>Company Report – Balance Sheet</h1>
+
+  <div class="meta">
+    <div><span class="k">Company:</span> <span class="v">{{ basic.get('company_name', 'Unknown') }}</span></div>
+    <div><span class="k">Company number:</span> <span class="v">{{ basic.get('company_number', 'Unknown') }}</span></div>
+    <div><span class="k">Fiscal year:</span> <span class="v">{{ fy.get('start','') }} - {{ fy.get('end','') }}</span></div>
+    <div><span class="k">Submitted:</span> <span class="v">{{ year.get('submission_date', '-') }}</span></div>
+    <div><span class="k">Exported at:</span> <span class="v">{{ exported_at.strftime("%Y-%m-%d %H:%M") }}</span></div>
+  </div>
+
+  <div class="section">
+    {# ---------- BALANCE SHEET (same as your financial tab) ---------- #}
+    <br>
+    <h2 class="section-header">Balance Sheet</h2>
+    <br>
+
+    <div class="asset-row">
+      <h4 class="asset-label-h4">Assets
+        <span class="asset-value-2">
+          {{ "{:,.2f}".format(year.total_assets).replace(",", " ").replace(".", ",") }}
+        </span>
+      </h4>
+    </div>
+
+    <br>
+
+    {{ macros.asset_row(year["intangible_assets"], "Intangible assets", False) }}
+    {{ macros.asset_row(year["tangible_assets"], "Tangible assets", False) }}
+    {{ macros.asset_row(year["financial_assets"], "Financial assets", False) }}
+    {{ macros.asset_row(year["current_assets"], "Current assets", True) }}
+    {{ macros.asset_row(year["inventories"], "Inventories", False) }}
+    {{ macros.asset_row(year["receivables"], "Receivables", False) }}
+    {{ macros.asset_row(year["securities"], "Securities / short-term financial assets", False) }}
+    {{ macros.asset_row(year["cash_and_bank_balances"], "Cash & bank balances", False) }}
+    {{ macros.asset_row(year["prepaid_expenses"], "Prepaid expenses & deferred charges", True) }}
+    {{ macros.asset_row(year["deferred_tax_assets"], "Deferred tax assets", True) }}
+
+    <br><br>
+
+    <h4 class="asset-label-h4">Liabilities &amp; Equity
+      <span class="asset-value-2">
+        {{ "{:,.2f}".format(year.total_liabilities).replace(",", " ").replace(".", ",") }}
+      </span>
+    </h4>
+
+    <br>
+
+    {{ macros.asset_row(year["equity"], "Equity", True) }}
+    {{ macros.asset_row(year["share_capital"], "Share capital", False) }}
+    {{ macros.asset_row(year["capital_reserves"], "Capital reserves", False) }}
+    {{ macros.asset_row(year["revenue_reserves"], "Revenue reserves", False) }}
+    {{ macros.asset_row(year["retained_earnings"], "Retained earnings", False) }}
+
+    <h6 class="asset-label-h6" style="margin-top: 10px;">Retained Earnings Breakdown</h6>
+    {{ macros.asset_row(year["retained_earnings_subitem"], "Retained earnings Opening", False) }}
+    {{ macros.asset_row(year["retained_earnings"] - year["retained_earnings_subitem"], "Retained earnings current year", False) }}
+
+    {{ macros.asset_row(year["liabilities"], "Liabilities", True) }}
+    {{ macros.asset_row(year["deferred_income"], "Deferred income / accrued liabilities", True) }}
+    {{ macros.asset_row(year["deferred_tax_liabilities"], "Deferred tax liabilities", True) }}
+  </div>
+</body>
+</html>

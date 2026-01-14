@@ -1,0 +1,263 @@
+<!-- language: html
+File: frontend-flask/app/templates/company_report.html -->
+{% import "macros/company_view.html" as m %}
+
+{# macro to format numbers or show fallback #}
+{% macro fmt(val, decimals=2) -%}
+  {% if val is number %}
+    {{ ("{:,.%df}" % decimals).format(val).replace(",", " ").replace(".", ",") }}
+  {% else %}
+    {{ val if val is not none else "Not available" }}
+  {% endif %}
+{%- endmacro %}
+
+{# macro to render a financial indicator value, using safe lookups #}
+{% macro fin_ind_value(year, key) -%}
+  {% set ind = year.get('indicators', {}).get(key) %}
+  {% set meta = m.INDICATORS_MAP.get(key) if m is defined else None %}
+  {% if ind %}
+    {{ m.put_value(ind.get('value') if ind is mapping else ind, meta.is_percent if meta else False) }}
+  {% else %}
+    <span class="muted">Not available</span>
+  {% endif %}
+{%- endmacro %}
+
+{% macro format_number(value, decimals=2) %}
+  {% if value is number %}
+    {{ ("{:,.%df}" % decimals).format(value)
+       .replace(",", " ")
+       .replace(".", ",") }}
+  {% else %}
+    Not available
+  {% endif %}
+{%- endmacro %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Company Report</title>
+  <style>
+    @page { size: A4; margin: 18mm 14mm; }
+    body { font-family: Arial, sans-serif; font-size: 12.5px; color: #111; }
+    h1 { font-size: 20px; margin: 0 0 6px; }
+    .meta { color: #444; margin-bottom: 16px; }
+    .section { margin-top: 18px; page-break-inside: avoid; break-inside: avoid; }
+    .section h2 { font-size: 14px; margin: 0 0 8px; padding: 6px 10px; background: #e9edf3; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+    .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #eee; padding: 6px 0; }
+    .k { font-weight: 700; color: #222; }
+    .v { color: #111; }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+    th { background: #f3f5f8; }
+    .pill { display: inline-block; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 11px; }
+    .risk-low { background: #e7f7ee; color: #0f5132; }
+    .risk-medium { background: #fff3cd; color: #664d03; }
+    .risk-high { background: #f8d7da; color: #842029; }
+    .muted { color: #666; }
+    /* keep numbers on one line */
+    table td {
+      white-space: nowrap;
+    }
+
+    /* right-align numeric columns */
+    table td:nth-child(2),
+    table td:nth-child(3),
+    table td:nth-child(4),
+    table td:nth-child(5),
+    table td:nth-child(6),
+    table td:nth-child(7) {
+      text-align: right;
+    }
+
+    /* center fiscal year */
+    table td:first-child {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+{% set basic = company.get('basic_info', {}) %}
+{% set financial_list = company.get('financial') or [] %}
+{% set compliance = company.get('compliance_indicators') %}
+
+<h1>{{ basic.get('company_name', 'Unknown') }}</h1>
+<div class="meta">
+  Exported: {{ exported_at.strftime("%Y-%m-%d %H:%M") }}<br>
+  Company Number: {{ basic.get('company_number', 'Unknown') }}
+</div>
+
+<div class="section">
+  <h2>Basic company details</h2>
+  <div class="grid">
+    <div class="row"><span class="k">Legal form</span><span class="v">{{ basic.get('legal_form', 'Unknown') }}</span></div>
+    <div class="row"><span class="k">European ID</span><span class="v">{{ basic.get('european_id', 'Unknown') }}</span></div>
+  </div>
+</div>
+
+{% set managers = company.get('management') or [] %}
+
+<div class="section">
+  <h2>Management</h2>
+  {% if managers %}
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Appointed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mm in managers %}
+          <tr>
+            <td>{{ mm.get('name', 'Unknown') }}</td>
+            <td>{{ mm.get('role', 'Unknown') }}</td>
+            <td>{{ mm.get('appointed_on', 'Unknown') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">No management data available.</div>
+  {% endif %}
+</div>
+
+{% set loc = company.get('location') or {} %}
+
+<div class="section">
+  <h2>Location</h2>
+
+  {% if loc %}
+    <div class="row">
+      <span class="k">Address</span>
+      <span class="v">
+        {{ loc.get('street','') }}
+        {{ loc.get('house_number','') }},
+        {{ loc.get('postal_code','') }}
+        {{ loc.get('city','') }},
+        {{ loc.get('country','Not available') }}
+      </span>
+    </div>
+  {% else %}
+    <div class="muted">No location data available.</div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h2>Key financial data (all years)</h2>
+
+  {% if financial_list|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Fiscal year</th>
+          <th>Total assets</th>
+          <th>Equity</th>
+          <th>Working capital</th>
+          <th>Debt-to-equity</th>
+          <th>Equity ratio (%)</th>
+          <th>Current ratio</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for y in financial_list %}
+          <tr>
+            <td>
+              {{ y.get('fiscal_year', {}).get('start', 'Unknown') }}
+              -
+              {{ y.get('fiscal_year', {}).get('end', 'Unknown') }}
+            </td>
+            <td>{{ fmt(y.get('total_assets')) }}</td>
+            <td>{{ fmt(y.get('equity')) }}</td>
+            <td>{{ fin_ind_value(y, 'working_capital') }}</td>
+            <td>{{ fin_ind_value(y, 'debt_to_equity_ratio') }}</td>
+            <td>{{ fin_ind_value(y, 'equity_ratio') }}</td>
+            <td>{{ fin_ind_value(y, 'current_ratio') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">No financial data available.</div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h2>Risk indicators (where available)</h2>
+
+  {% if financial_list|length > 0 %}
+    {% set latest = financial_list[-1] %}
+
+    {% set dte_obj = latest.get('indicators', {}).get('debt_to_equity_ratio') %}
+    {% set dte = dte_obj.get('value') if dte_obj is mapping else (dte_obj.value if dte_obj else none) %}
+    {% if dte is not none %}
+      {% if dte < 1 %}{% set dte_cls = "risk-low" %}
+      {% elif dte <= 2 %}{% set dte_cls = "risk-medium" %}
+      {% else %}{% set dte_cls = "risk-high" %}{% endif %}
+    {% else %}
+      {% set dte_cls = "" %}
+    {% endif %}
+
+    <div class="row">
+      <span class="k">Debt-to-equity</span>
+      <span class="v">
+        {% if dte is none %}<span class="muted">Not available</span>
+        {% else %}<span class="pill {{ dte_cls }}">{{ format_number(dte) }}</span>{% endif %}
+      </span>
+    </div>
+
+    {% set er_obj = latest.get('indicators', {}).get('equity_ratio') %}
+    {% set er  = er_obj.get('value')  if er_obj is mapping else (er_obj.value if er_obj else none) %}
+
+    {% if er is not none and er <= 1 %}
+      {% set er_pct = er * 100 %}
+    {% else %}
+      {% set er_pct = er %}
+    {% endif %}
+
+    {% if er_pct is not none %}
+      {% if er_pct < 25 %}{% set er_cls = "risk-high" %}
+      {% elif er_pct <= 50 %}{% set er_cls = "risk-medium" %}
+      {% else %}{% set er_cls = "risk-low" %}{% endif %}
+    {% else %}
+      {% set er_cls = "" %}
+    {% endif %}
+
+    <div class="row">
+      <span class="k">Equity ratio (%)</span>
+      <span class="v">
+        {% if er_pct is none %}<span class="muted">Not available</span>
+        {% else %}<span class="pill {{ er_cls }}">{{ format_number(er_pct) }}%</span>{% endif %}
+      </span>
+    </div>
+  {% endif %}
+
+  {% if compliance %}
+    {% set avg_obj = compliance.get('calculations', {}).get('avg_filing_delay') %}
+    {% set avg = avg_obj.value if avg_obj else none %}
+
+    {% if avg is not none %}
+      {% if avg <= 90 %}{% set avg_cls = "risk-low" %}
+      {% elif avg <= 273 %}{% set avg_cls = "risk-medium" %}
+      {% else %}{% set avg_cls = "risk-high" %}{% endif %}
+    {% else %}
+      {% set avg_cls = "" %}
+    {% endif %}
+
+    <div class="row">
+      <span class="k">Avg filing delay (days)</span>
+      <span class="v">
+        {% if avg is none %}<span class="muted">Not available</span>
+        {% else %}<span class="pill {{ avg_cls }}">{{ format_number(avg, 0) }}</span>{% endif %}
+      </span>
+    </div>
+  {% else %}
+    <div class="muted">No compliance data available.</div>
+  {% endif %}
+</div>
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 from flask import Response
 import requests
 
+
 def response_to_data(response: Response):
     payload = response.json()
 
@@ -29,12 +30,14 @@ def fetch_companies(term: str, page: int):
         print(f"API error: {e}")
         return []
 
+
 def get_company_data(fnr):
     res = requests.get(f"http://127.0.0.1:8000/view/{fnr}")
     if res.status_code != 200:
-        return {}
+        raise Exception(f"Could not get company '{fnr}' data")
     res.raise_for_status()
     return response_to_data(res)
+
 
 def get_node_neighbours(key: str, label: str = "Company"):
     """

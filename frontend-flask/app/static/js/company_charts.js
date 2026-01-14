@@ -11,6 +11,12 @@ window.renderCompanyCharts = function (rawData) {
             if (!end) continue;
 
             let v = year[key];
+
+            // fallback: ratios live under indicators[key].value
+            if (v == null && year.indicators && year.indicators[key] && year.indicators[key].value != null) {
+              v = year.indicators[key].value;
+            }
+
             if (v == null) continue;
 
             if (key === "equity_ratio") v = v * 100;
@@ -98,7 +104,7 @@ window.renderCompanyCharts = function (rawData) {
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { ticks: { autoSkip: false } },
-                    y: { 
+                    y: {
                         beginAtZero: false,
                         ticks: {
                             callback: function(value) {

@@ -65,7 +65,7 @@
     "profit_loss": {
       "label": "Retained Earnings – Current Year",
       "description": "Represents the company's profit or loss for the current financial year.",
-      "is_percent": False,
+      "is_percent": False
     },
     "asset_growth_rate": {
       "label": "Asset Growth Rate",
@@ -80,7 +80,7 @@
     "profit_loss_development": {
       "label": "Retained Earnings – Year-over-Year Change",
       "description": "Indicates how the current year's result compares to the previous year.",
-      "is_percent": True,
+      "is_percent": True
     },
     "equity_ratio_trend": {
       "label": "Equity Ratio Trend",
@@ -109,18 +109,34 @@
     }
 } %}
 
-{% macro indicator_section(value, key, css="") %}
-  {% set meta = INDICATORS_MAP[key] %}
-  <div class="financial-ratio-box {{ css }}">
-    <span class="info-bubble">i</span>
-    <span class="tooltip-text">{{ meta.description }}</span>
-    <div>
-      <h5>{{ meta.label }}</h5>
+{% macro financial_ratio_box(key, value, css = "") %}
+  {% set meta = INDICATORS_MAP.get(key) %}
+  {% if meta %}
+    <div class="financial-ratio-box {{ css }}">
+      <span class="info-bubble">i</span>
+      <span class="tooltip-text">{{ meta.description }}</span>
+      <div>
+        <h5>{{ meta.label }}</h5>
+      </div>
+      <div class="ratio-value">
+        {{ put_value(value, meta.is_percent) }}
+      </div>
     </div>
-    <div class="ratio-value">
-      {{ put_value(value, meta.is_percent) }}
-    </div>
-  </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro indicator_section(key, indicator) %}
+  {% set css = "" %}
+  {% if indicator is not none %}
+    {% if indicator.level == "H" %}
+      {% set css = "risk-high" %}
+    {% elif indicator.level == "M" %}
+      {% set css = "risk-medium" %}
+    {% elif indicator.level == "L" %}
+      {% set css = "risk-low" %}
+    {% endif %}
+  {% endif %}
+  {{ financial_ratio_box(key, indicator.value if indicator else none, css) }}
 {% endmacro %}
 
 {% macro format_number(value) %}
@@ -158,7 +174,7 @@
       <h6 class="asset-label-h6">{{ label }}</h6>
     {% endif %}
     <span class="asset-value">
-      {{ "{:,.2f}".format(value).replace(",", " ").replace(".", ",") }}
+        {{ format_number(value) }}
     </span>
   </div>
 {% endmacro %}

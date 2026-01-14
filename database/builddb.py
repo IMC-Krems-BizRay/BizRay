@@ -4,9 +4,8 @@ import json
 import os
 from neo4j import GraphDatabase
 import xml.etree.ElementTree as ET
-
+import datetime
 from types import SimpleNamespace
-
 
 
 BATCH_SIZE = 1000
@@ -27,7 +26,8 @@ UNWIND $rows AS row
 
 MERGE (c:Company {company_id: row.company_id})
 SET c.data   = row.information,
-    c.glance = row.glance
+    c.glance = row.glance,
+    c.updated_at = $datetime
 
 MERGE (a:Address {address_key: row.addr_key})
 MERGE (c)-[:LOCATED_AT]->(a)
@@ -41,11 +41,12 @@ UNWIND row.mgr_keys AS mk
 
 def write_batch(batch):
     with driver.session() as session:
-        session.run(CYPHER, rows=batch)
+        session.run(
+            CYPHER, rows=batch, datetime=datetime.datetime(2000, 1, 1).timestamp()
+        )  # if it breaks we can blame y2k
 
 
-
-#in case of crash
+# in case of crash
 def load_processed():
     if not os.path.exists(PROGRESS_FILE):
         return set()
@@ -57,8 +58,6 @@ def mark_processed(company_ids):
     with open(PROGRESS_FILE, "a", encoding="utf-8") as f:
         for fnr in company_ids:
             f.write(fnr + "\n")
-
-
 
 
 def json_date(date):
@@ -78,13 +77,18 @@ def extract_glance(root):
     legal_form_elem = firma.find("ns1:FI_DKZ07/ns1:RECHTSFORM/ns1:TEXT", NS)
     euid_elem = root.find("ns1:EUID/ns1:EUID", NS)
 
+    company_number = root.attrib.get(
+        "{ns://firmenbuch.justiz.gv.at/Abfrage/v2/AuszugResponse}FNR"
+    )
+
     return {
-        "company_name": company_name_elem.text if company_name_elem is not None else None,
-        "legal_form": legal_form_elem.text if legal_form_elem is not None else None,
-        "company_number": root.attrib.get(
-            "{ns://firmenbuch.justiz.gv.at/Abfrage/v2/AuszugResponse}FNR"
+        "company_id": company_number,
+        "company_name": (
+            company_name_elem.text if company_name_elem is not None else None
         ),
-        "european_id": euid_elem.text if euid_elem is not None else None
+        "legal_form": legal_form_elem.text if legal_form_elem is not None else None,
+        "company_number": company_number,
+        "european_id": euid_elem.text if euid_elem is not None else None,
     }
 
 
@@ -92,9 +96,9 @@ def extract_location_info(root):
     fi_dkz03 = root.find("ns1:FIRMA/ns1:FI_DKZ03", NS)
     if fi_dkz03 is not None:
         street = ", ".join(
-            i.text for i in (
-                fi_dkz03.findall("ns1:STRASSE", NS)
-                + fi_dkz03.findall("ns1:STELLE", NS)
+            i.text
+            for i in (
+                fi_dkz03.findall("ns1:STRASSE", NS) + fi_dkz03.findall("ns1:STELLE", NS)
             )
             if i.text
         )
@@ -112,10 +116,9 @@ def extract_location_info(root):
 
     fi_dkz06 = root.find("ns1:FIRMA/ns1:FI_DKZ06", NS)
     if fi_dkz06 is not None:
-        city = (
-            fi_dkz06.findtext("ns1:SITZ", default=None, namespaces=NS)
-            or fi_dkz06.findtext("ns1:ORTNR/ns1:TEXT", default=None, namespaces=NS)
-        )
+        city = fi_dkz06.findtext(
+            "ns1:SITZ", default=None, namespaces=NS
+        ) or fi_dkz06.findtext("ns1:ORTNR/ns1:TEXT", default=None, namespaces=NS)
         return city
 
     return None
@@ -158,13 +161,18 @@ def extract_management_info(root):
     return management_list
 
 
+def find_zip_path():
+    for filename in os.listdir("."):
+        if filename.startswith("auszuege") and filename.endswith(".zip"):
+            return filename
+    raise Exception("Zip could not be found")
 
 
 def process_zip(zip_path, processed):
     batch = []
     total = 0
 
-    with zipfile.ZipFile(zip_path, 'r') as zf:
+    with zipfile.ZipFile(zip_path, "r") as zf:
         for entry in zf.infolist():
             if entry.is_dir():
                 continue
@@ -189,14 +197,12 @@ def process_zip(zip_path, processed):
 
                 row = {
                     "company_id": company_id,
-                    "information": json.dumps({
-                        "glance": glance,
-                        "location": location,
-                        "management": managers
-                    }),
+                    "information": json.dumps(
+                        {"glance": glance, "location": location, "management": managers}
+                    ),
                     "glance": json.dumps(glance),
                     "addr_key": location or "UNKNOWN",
-                    "mgr_keys": managers
+                    "mgr_keys": managers,
                 }
 
                 batch.append(row)
@@ -216,9 +222,8 @@ def process_zip(zip_path, processed):
         print(f"Inserted {total} companies (final)")
 
 
-
-
 if __name__ == "__main__":
+    zip_path = find_zip_path()
     processed = load_processed()
-    process_zip("put the filepath here", processed)#######################put the filepath here##################################
+    process_zip(zip_path, processed)
     driver.close()
