@@ -146,6 +146,24 @@
     nodes.update({ id: nodeId, isExpandable: false });
   }
 
+  function updateNodeKeepStyle(nodeId, patch) {
+    const cur = nodes.get(nodeId);
+    if (!cur) return;
+
+    nodes.update({
+      // keep current styling-related fields
+      id: nodeId,
+      group: cur.group,
+      color: cur.color,
+      borderWidth: cur.borderWidth,
+      borderWidthSelected: cur.borderWidthSelected,
+      isExpandable: cur.isExpandable,
+
+      // apply your new data
+      ...patch
+    });
+  }
+
   // Supports:
   // { "result": { "address_key": "..." } }
   // { "result": { "manager_key": "..." } }
@@ -247,6 +265,32 @@
 
     return null;
   }
+
+  async function refreshCompanyNode(companyId) {
+    const url = `http://127.0.0.1:8000/node/${encodeURIComponent(companyId)}?label=Company`;
+    const r = await fetch(url);
+    if (!r.ok) return;
+
+    const arr = await r.json();
+    if (!Array.isArray(arr) || !arr[0] || arr[0].result == null) return;
+
+    const parsed = parseNeighbour(arr[0]); // arr[0] has {result: "..."} shape
+    if (!parsed || !parsed.key) return;
+
+    const nodeId = makeNodeId(parsed.type, parsed.key);
+
+    // Only update if it already exists (avoid accidentally adding duplicates)
+    if (!nodes.get(nodeId)) return;
+
+    // IMPORTANT: keep border/color styles
+    updateNodeKeepStyle(nodeId, {
+      label: parsed.label,
+      extra: parsed.extra || {},
+      // keep clean name for detail panel (no risk letter)
+      name: parsed.extra?.companyName || nodes.get(nodeId)?.name || ""
+    });
+  }
+
 
   // Probe backend once to decide if node is expandable.
   // IMPORTANT: expandable means it would add at least one NEW node (not already in seenNodes).
@@ -505,11 +549,10 @@
 
           // refresh existing company nodes after enrichment (risk/label changes)
           if (seenNodes.has(targetNodeId) && parsed.type === "Company") {
-            nodes.update({
-              id: targetNodeId,
+            updateNodeKeepStyle(targetNodeId, {
               label: parsed.label,
               extra: parsed.extra || {},
-              name: parsed.label
+              name: parsed.extra?.companyName || nodes.get(targetNodeId)?.name || parsed.label
             });
           }
 
