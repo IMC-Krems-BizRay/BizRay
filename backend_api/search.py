@@ -6,12 +6,15 @@ from datetime import date
 import re
 from enum import Enum
 
+
 class SearchMode(Enum):
-    NAME = 0,
+    NAME = 0
     FNR = 1
+
 
 # LRU cache with 10 minutes of expiry (the time limit is to prevent frequently used items to never update)
 name_search_cache = TTLCache(maxsize=128, ttl=600)
+
 
 def check_name_search_cache(term):
     global name_search_cache
@@ -24,9 +27,13 @@ def check_name_search_cache(term):
     name_search_cache[term] = result
     return result
 
+
 def detect_search_mode(term: str) -> SearchMode:
     term = term.strip()
-    return SearchMode.FNR if re.fullmatch(r"\d{1,6}[a-zA-Z]", term) else SearchMode.NAME
+    return (
+        SearchMode.FNR if re.fullmatch(r"\d{1,6} ?[a-zA-Z]", term) else SearchMode.NAME
+    )
+
 
 def search(term: str, page: int) -> dict:
     mode = detect_search_mode(term)
@@ -43,35 +50,30 @@ def search(term: str, page: int) -> dict:
         end = start + per_page
 
         # Can send more info if needed
-        return {
-            "total_pages": total_pages,
-            "companies": companies[start:end]
-        }
+        return {"total_pages": total_pages, "companies": companies[start:end]}
     # This ideally should redirect towards the company view page and it's not autosuggested
     elif mode == SearchMode.FNR:
-        return {
-            "total_pages": 1,
-            "companies": [search_by_fnr(term)]
-        }
+        return {"total_pages": 1, "companies": [search_by_fnr(term)]}
+
 
 def search_by_name(company_name) -> list[dict]:
-    #SUCHFIRMA finds the ids of companies with the name like FIRMENWORTLAUT
+    # SUCHFIRMA finds the ids of companies with the name like FIRMENWORTLAUT
     suche_params = {
         "FIRMENWORTLAUT": company_name,
-        "EXAKTESUCHE": False, #we can change this later
-        "SUCHBEREICH": 1, #can change later
-        "GERICHT": "", #DO LATER !?!?
+        "EXAKTESUCHE": False,  # we can change this later
+        "SUCHBEREICH": 1,  # can change later
+        "GERICHT": "",  # DO LATER !?!?
         "RECHTSFORM": "",
         "RECHTSEIGENSCHAFT": "",
-        "ORTNR": ""
+        "ORTNR": "",
     }
 
     suche_response = client.service.SUCHEFIRMA(**suche_params)
     results = suche_response.ERGEBNIS
 
-    print(f"Found {len(results)} companies for '{company_name}'") #for debugging
-    #print(results[0])
-    #print(type(suche_response))
+    print(f"Found {len(results)} companies for '{company_name}'")  # for debugging
+    # print(results[0])
+    # print(type(suche_response))
     return [
         {  # included this for english translation and in case we decide to remove some fields later
             "fnr": result.FNR,
@@ -87,11 +89,12 @@ def search_by_name(company_name) -> list[dict]:
         for result in results
     ]
 
+
 def search_by_fnr(company_fnr) -> dict:
     suche_params = {
         "FNR": company_fnr,
         "STICHTAG": date.today(),
-        "UMFANG": "Kurzinformation"
+        "UMFANG": "Kurzinformation",
     }
 
     suche_response = client.service.AUSZUG_V2_(**suche_params)
@@ -101,7 +104,7 @@ def search_by_fnr(company_fnr) -> dict:
 
     return {
         "fnr": company_fnr,
-        "status": "active", # for now
+        "status": "active",  # for now
         "name": firma.FI_DKZ02[0].BEZEICHNUNG,
         "location": firma.FI_DKZ06[0].SITZ,
         # Not needed

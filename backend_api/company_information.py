@@ -636,7 +636,6 @@ def get_doc_ids(fnr) -> tuple[list[dict], list[str], int]:
     # The same document can be distincted by AZ
     # The FNR and AZ are fixed size and must always be present
     # which means that AZ always lays in the range [7:20] (exclusive)
-    # It's important to receive XMLs first since the first document takes it's uniqueness
     keys = set()
     pdf_ids = []
     xml_report_ids = []
@@ -678,10 +677,10 @@ def filing_delay(sheet) -> int:
 def extract_risk_indicators(management, indicators):
     for manager in management:
         if manager["role"] == "MASSEVERWALTER/IN":
-            return {"has_masserverwalter": True, "risk_level": "H"}
+            return {"has_masseverwalter": True, "risk_level": "H"}
 
     if not indicators:
-        return {"has_masserverwalter": False, "risk_level": None}
+        return {"has_masseverwalter": False, "risk_level": None}
 
     high_risk_metrics = 0
     for metric in indicators.values():
@@ -689,7 +688,7 @@ def extract_risk_indicators(management, indicators):
             high_risk_metrics += 1
 
     return {
-        "has_masserverwalter": False,
+        "has_masseverwalter": False,
         "risk_level": (
             "L" if high_risk_metrics <= 2 else "M" if high_risk_metrics <= 4 else "H"
         ),

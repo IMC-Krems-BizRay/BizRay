@@ -3,27 +3,26 @@ import json
 from backend_api.config import DB_USER, DB_PASS, URI, DB
 import datetime
 
+from .company_information import company_info
+from fastapi.encoders import jsonable_encoder
+import datetime
+import json
+
 driver = GraphDatabase.driver(URI, auth=(DB_USER, DB_PASS))
 
 
 def make_manager_key(m):
-    date_of_birth = m["date_of_birth"]
-    if not date_of_birth:
-        return "Date of birth is unavailable"
-
-    name = m["name"]
-    return f"{date_of_birth}|{name}".strip()
+    return f"{m["date_of_birth"]}|{m["name"]}"
 
 
-# TODO: This doesn't always work properly
-def make_address_key(loc):
+def make_address_key(loc) -> str | None:
     if not loc:
-        return "Unknown Address"
+        return None
 
-    street = (loc.get("street") or "").strip()
-    house_number = (loc.get("house_number") or "").strip()
-    postal_code = (loc.get("postal_code") or "").strip()
-    city = (loc.get("city") or "").strip()
+    street = loc["street"]
+    house_number = loc["house_number"]
+    postal_code = loc["postal_code"]
+    city = loc["city"]
 
     parts = []
 
@@ -36,7 +35,7 @@ def make_address_key(loc):
         parts.append(line2)
 
     if not parts:
-        return "Unknown Address"
+        return None
 
     return ", ".join(parts)
 
@@ -57,17 +56,17 @@ def create_indexes():
 # todo: this is just to confirm functionality, must correct it later
 def get_risk_indicators(data):
     """
-        company_id
+    company_id
 
-        company_name
+    company_name
 
 
-         #Status: active / not active
-         #last submitted XML report: 20XX
-         financial indicators classified red: x/8
-         #missing reporting years: x/8
-        # profit/loss 20xx: xx
-        """
+     #Status: active / not active
+     #last submitted XML report: 20XX
+     financial indicators classified red: x/8
+     #missing reporting years: x/8
+    # profit/loss 20xx: xx
+    """
     company_id = data["basic_info"]["company_number"]
     company_name = data["basic_info"]["company_name"]
     is_deleted = data["basic_info"]["is_deleted"]
@@ -79,15 +78,15 @@ def get_risk_indicators(data):
             "company_id": company_id,
             "company_name": company_name,
             "deleted": is_deleted,
-            "risk_level": risk_level,   # keep it even if None
+            "risk_level": risk_level,  # keep it even if None
             "error": "Financial data is unavailable",
         }
 
     last_filed_doc = data["financial"][-1]["submission_date"]
 
-    missing_years_value = (
-        data["compliance_indicators"]["calculations"]["missing_reporting_years"]["value"]
-    )
+    missing_years_value = data["compliance_indicators"]["calculations"][
+        "missing_reporting_years"
+    ]["value"]
 
     profit_loss_value = data["financial"][-1]["indicators"]["profit_loss"]["value"]
 
@@ -102,15 +101,25 @@ def get_risk_indicators(data):
     }
 
 
-def CREATE_COMPANY(data):
+def GET_COMPANY(company_fnr: str):
+    fromdb = SEARCH_COMPANY(company_fnr)
+    if fromdb:
+        timestamp = fromdb["updated_at"]
+        if timestamp > datetime.datetime.now().timestamp() - 30 * 24 * 60 * 60:
+            return fromdb["data"]
+    data = company_info(company_fnr)
+    CREATE_COMPANY(jsonable_encoder(data))
+    return data
 
+
+def CREATE_COMPANY(data):
     # data = company_json["result"]
     # print(data)
     company_id = data["basic_info"]["company_number"]
 
-    mgr_keys = [make_manager_key(m) for m in data["management"]]
+    mgr_keys = [make_manager_key(m) for m in data["management"] if m["date_of_birth"]]
 
-    addr_key = make_address_key(data.get("location"))
+    addr_key = make_address_key(data["location"])
 
     glance = json.dumps(get_risk_indicators(data))
     # print(glance)
@@ -122,8 +131,13 @@ def CREATE_COMPANY(data):
       SET c.glance = $glance
       SET c.updated_at = $datetime
 
-    MERGE (a:Address {address_key: $addr_key})
-    MERGE (c)-[:LOCATED_AT]->(a)
+    WITH c
+    OPTIONAL MATCH (a:Address {address_key: $addr_key})
+    FOREACH (_ IN CASE WHEN $addr_key IS NOT NULL THEN [1] ELSE [] END |
+        MERGE (a2:Address {address_key: $addr_key})
+        MERGE (c)-[:LOCATED_AT]->(a2)
+    )
+
 
     WITH c
     UNWIND $mgr_keys AS mk
