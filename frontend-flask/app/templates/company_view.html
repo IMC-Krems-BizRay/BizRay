@@ -263,6 +263,60 @@
                                         <p style="padding-left:20px; color:#777;">No compliance data available.</p>
                                       {% endif %}
                                       {# ---------- Compliance end ---------- #}
+                                      {% if financial_list and financial_list|length > 0 %}
+                                      <div style="margin-top: 35px;">
+                                        <h2 class="section-header">Company Documents</h2>
+
+                                        <div class="card" style="border-radius: 12px; border: 1px solid #eee;">
+                                          <div class="card-body">
+
+                                            <div class="table-responsive">
+                                              <table class="table align-middle" style="margin-bottom: 0;">
+                                                <thead>
+                                                  <tr>
+                                                    <th style="width: 35%;">Date</th>
+                                                    <th style="width: 25%;">Type</th>
+                                                    <th style="width: 20%;">File</th>
+                                                    <th style="width: 20%;">Actions</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {% for year in financial_list|reverse %}
+                                                    {% set idx = (financial_list|length - 1 - loop.index0) %}
+                                                    {% set fy = year.get('fiscal_year', {}) %}
+
+                                                    <tr>
+                                                      <td>
+                                                        <div style="font-weight: 600;">
+                                                          {{ fy.get('end', 'Financial year') }}
+                                                        </div>
+                                                        <div style="color:#667085; font-size: 0.9rem;">
+                                                          Submitted: {{ year.get('submission_date', '-') }}
+                                                        </div>
+                                                      </td>
+                                                      <td>Balance Sheet</td>
+                                                      <td>
+                                                        <span class="badge" style="background:#ff5c7a; color:white; padding:8px 12px; border-radius: 999px;">
+                                                          PDF
+                                                        </span>
+                                                      </td>
+                                                      <td>
+                                                        <a class="btn btn-outline-primary"
+                                                           href="{{ url_for('main.export_balance_sheet_year_pdf', fnr=fnr, idx=idx) }}">
+                                                          Download
+                                                        </a>
+                                                      </td>
+                                                    </tr>
+                                                  {% endfor %}
+                                                </tbody>
+                                              </table>
+                                            </div>
+
+                                          </div>
+                                        </div>
+                                      </div>
+                                    {% endif %}
+
 
                                     </div> {# col-lg-12 #}
                                   </div>   {# row #}

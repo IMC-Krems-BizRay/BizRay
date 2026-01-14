@@ -217,6 +217,53 @@ def export_company_pdf(fnr):
     resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     return resp
 
+@main.route("/view/<fnr>/export/balance-sheet/<int:idx>.pdf")
+def export_balance_sheet_year_pdf(fnr: str, idx: int):
+    if not session.get("logged_in"):
+        abort(403)
+
+    company = get_company_data(fnr)
+    basic = (company or {}).get("basic_info", {}) or {}
+
+    financial = (company or {}).get("financial") or []
+    if idx < 0 or idx >= len(financial):
+        return make_response("Invalid year index", 400)
+
+    year = financial[idx]
+
+    company_name = basic.get("company_name", "Company")
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    fy = year.get("fiscal_year", {}) or {}
+    fy_start = fy.get("start", "")
+    fy_end = fy.get("end", "")
+    fy_label = f"{fy_start}-{fy_end}" if (fy_start or fy_end) else f"year_{idx}"
+
+    filename = f"{today}_{_safe_filename(company_name)}_BalanceSheet_{_safe_filename(fy_label)}.pdf"
+
+    html = render_template(
+        "balance_sheet_report.html",
+        company=company,
+        year=year,
+        exported_at=datetime.now(),
+    )
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.set_content(html, wait_until="load")
+        pdf_bytes = page.pdf(
+            format="A4",
+            print_background=True,
+            margin={"top": "18mm", "bottom": "18mm", "left": "14mm", "right": "14mm"},
+        )
+        browser.close()
+
+    resp = make_response(pdf_bytes)
+    resp.headers["Content-Type"] = "application/pdf"
+    resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
+
 
 @main.route("/api/network")
 def api_network():
