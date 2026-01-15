@@ -92,12 +92,6 @@ def get_document(document_id: str):
     return {"result": encoded}
 
 
-@app.get("/repopulate")
-def repop():
-    for i in company_ids:
-        view_company(i)
-
-
 @app.post("/enrich/neighbours/{company_id}")
 def enrich_neighbours(company_id: str):
     neighbours = GET_ADJ(company_id)
@@ -116,75 +110,3 @@ def enrich_neighbours(company_id: str):
             failed += 1
 
     return {"center": company_id, "enriched": enriched, "failed": failed}
-
-
-# to repopulate
-company_ids = [
-    "435836 k",
-    "570748 k",
-    "284723 k",
-    "318490 v",
-    "331076 b",
-    "583360 h",
-    "79297 p",
-    "35684 b",
-    "631134 p",
-    "211940 b",
-    "145474 h",
-    "452749 h",
-    "274088 x",
-    "615869 s",
-    "444429 y",
-    "667306 h",
-    "33158 m",
-    "56247 t",
-    "244788 h",
-    "245251 p",
-    "485948 f",
-    "581091 x",
-    "441584 p",
-    "486131 z",
-    "297115 i",
-    "291020 x",
-    "406164 a",
-    "447820 i",
-    "426513 a",
-    "547370 g",
-    "278713 y",
-    "444428 x",
-    "278717 d",
-    "504855 i",
-    "562240 z",
-    "566577 b",
-    "359363 a",
-    "628511 g",
-    "333252 b",
-    "480722 w",
-    "574012 k",
-    "242833 h",
-    "509899 b",
-    "509901 f",
-    "516642 v",
-    "542081 d",
-    "542720 v",
-    "574011 i",
-    "360689 a",
-    "388427 t",
-    "353543 t",
-    "574279 d",
-    "280545 t",
-    "279489 p",
-    "280833 s",
-    "445407 k",
-    "404487 i",
-    "162991 v",
-    "164602 m",
-    "257415 b",
-    "340535 m",
-    "180213 w",
-    "627820 s",
-    "414769 f",
-    "647957 d",
-    "434465 w",
-    "449074 d",
-]
